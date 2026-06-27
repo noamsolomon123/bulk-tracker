@@ -65,5 +65,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   notch: { width: 2, height: '100%', backgroundColor: colors.bg, opacity: 0.35 },
-  sub: { fontFamily: fonts.regular, color: colors.textFaint, fontSize: 12, marginTop: 7 },
+  sub: { fontFamily: fonts.medium, color: colors.textDim, fontSize: 12, marginTop: 7 },
 });

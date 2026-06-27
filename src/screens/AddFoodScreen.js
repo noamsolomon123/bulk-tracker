@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, Pressable, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Screen from '../components/Screen';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -8,6 +9,7 @@ import { colors, fonts, radius } from '../theme';
 
 export default function AddFoodScreen({ navigation }) {
   const { allFoods, addLogEntry, deleteCustomFood } = useApp();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(null);
   const [qty, setQty] = useState('1');
@@ -96,7 +98,7 @@ export default function AddFoodScreen({ navigation }) {
       />
 
       {selected && (
-        <View style={styles.addBar}>
+        <View style={[styles.addBar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
           <View style={{ flex: 1 }}>
             <Text style={styles.selName} numberOfLines={1}>{selected.name}</Text>
             <Text style={styles.selSub}>לכל {selected.servingLabel}</Text>
@@ -147,7 +149,8 @@ const styles = StyleSheet.create({
   foodName: { fontFamily: fonts.bold, fontSize: 16, color: colors.text, flexShrink: 1 },
   tag: {
     fontFamily: fonts.extrabold, fontSize: 10, color: colors.ink, backgroundColor: colors.volt,
-    paddingHorizontal: 6, paddingVertical: 1, borderRadius: radius.sm, overflow: 'hidden',
+    paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, overflow: 'hidden',
+    includeFontPadding: false, textAlignVertical: 'center',
   },
   foodSub: { fontFamily: fonts.regular, fontSize: 13, color: colors.textDim, marginTop: 3 },
   foodMacros: { alignItems: 'flex-end', gap: 2 },
@@ -158,7 +161,7 @@ const styles = StyleSheet.create({
   addBar: {
     position: 'absolute', left: 0, right: 0, bottom: 0,
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    padding: 16, paddingBottom: 22,
+    padding: 16,
     backgroundColor: colors.bgElev,
     borderTopWidth: 1.5, borderTopColor: colors.border,
   },

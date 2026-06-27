@@ -51,7 +51,7 @@ function HomeStack() {
   );
 }
 
-const TAB_ICONS = { Home: '🔥', Profile: '💪', Settings: '⚙︎' };
+const TAB_ICONS = { Home: '🔥', Profile: '💪', Settings: '⚙️' };
 
 function IronTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();

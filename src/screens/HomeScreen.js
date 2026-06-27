@@ -128,8 +128,8 @@ const styles = StyleSheet.create({
   section: { fontFamily: fonts.display, fontSize: 19, color: colors.text },
   count: {
     fontFamily: fonts.extrabold, fontSize: 13, color: colors.ink, backgroundColor: colors.volt,
-    minWidth: 24, textAlign: 'center', borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 1,
-    overflow: 'hidden',
+    minWidth: 24, textAlign: 'center', textAlignVertical: 'center', includeFontPadding: false,
+    borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden',
   },
 
   entry: { marginTop: 10 },

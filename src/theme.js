@@ -16,7 +16,7 @@ export const colors = {
   // text — bone
   text: '#F4EEE0',
   textDim: '#A99E86',
-  textFaint: '#6E6553',
+  textFaint: '#8A8068',
   ink: '#0E0B06', // text on bright accents
 
   // energy
