@@ -1,16 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, FlatList, TextInput, Pressable, Alert } from 'react-native';
+import Screen from '../components/Screen';
+import Card from '../components/Card';
+import Button from '../components/Button';
 import { useApp } from '../context/AppContext';
-import { colors } from '../theme';
+import { colors, fonts, radius } from '../theme';
 
 export default function AddFoodScreen({ navigation }) {
   const { allFoods, addLogEntry, deleteCustomFood } = useApp();
@@ -49,58 +43,62 @@ export default function AddFoodScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['bottom']}>
+    <Screen edges={['bottom']} glow="volt">
       <View style={styles.searchWrap}>
         <TextInput
           style={styles.search}
           placeholder="חיפוש מזון…"
-          placeholderTextColor={colors.textDim}
+          placeholderTextColor={colors.textFaint}
           value={query}
           onChangeText={setQuery}
         />
-        <TouchableOpacity
-          style={styles.newBtn}
-          onPress={() => navigation.navigate('CreateFood')}
-        >
-          <Text style={styles.newBtnText}>+ חדש</Text>
-        </TouchableOpacity>
+        <Pressable style={styles.newBtn} onPress={() => navigation.navigate('CreateFood')}>
+          <Text style={styles.newBtnText}>＋ חדש</Text>
+        </Pressable>
       </View>
 
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16, paddingBottom: selected ? 140 : 24 }}
+        contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: selected ? 150 : 28 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         renderItem={({ item }) => {
           const isSel = selected?.id === item.id;
+          const rail = item.custom ? colors.volt : colors.amber;
           return (
-            <TouchableOpacity
-              style={[styles.food, isSel && styles.foodSelected]}
-              onPress={() => setSelected(item)}
-              onLongPress={() => item.custom && removeCustom(item)}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={styles.foodName}>
-                  {item.name}
-                  {item.custom ? '  ·  שלי' : ''}
-                </Text>
-                <Text style={styles.foodSub}>{item.servingLabel}</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={[styles.macro, { color: colors.calories }]}>{item.calories} קק״ל</Text>
-                <Text style={[styles.macro, { color: colors.protein }]}>{item.protein} גרם חלבון</Text>
-              </View>
-            </TouchableOpacity>
+            <Pressable onPress={() => setSelected(item)} onLongPress={() => item.custom && removeCustom(item)}>
+              <Card
+                accent={rail}
+                padded={false}
+                style={[styles.food, isSel && styles.foodSel]}
+              >
+                <View style={styles.foodPad}>
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.foodNameRow}>
+                      <Text style={styles.foodName} numberOfLines={1}>{item.name}</Text>
+                      {item.custom ? <Text style={styles.tag}>שלי</Text> : null}
+                    </View>
+                    <Text style={styles.foodSub}>{item.servingLabel}</Text>
+                  </View>
+                  <View style={styles.foodMacros}>
+                    <Text style={[styles.macro, { color: colors.amber }]}>{item.calories} <Text style={styles.macroUnit}>קק״ל</Text></Text>
+                    <Text style={[styles.macro, { color: colors.volt }]}>{item.protein} <Text style={styles.macroUnit}>חלבון</Text></Text>
+                  </View>
+                </View>
+              </Card>
+            </Pressable>
           );
         }}
         ListEmptyComponent={
-          <Text style={styles.empty}>אין מזונות שתואמים ל“{query}”. הקש “+ חדש” כדי ליצור.</Text>
+          <Text style={styles.empty}>אין מזונות שתואמים ל“{query}”.{'\n'}הקש “＋ חדש” כדי ליצור מזון.</Text>
         }
       />
 
       {selected && (
         <View style={styles.addBar}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.selName}>{selected.name}</Text>
+            <Text style={styles.selName} numberOfLines={1}>{selected.name}</Text>
             <Text style={styles.selSub}>לכל {selected.servingLabel}</Text>
           </View>
           <TextInput
@@ -111,80 +109,66 @@ export default function AddFoodScreen({ navigation }) {
             selectTextOnFocus
           />
           <Text style={styles.servings}>מנות</Text>
-          <TouchableOpacity style={styles.confirm} onPress={doAdd}>
-            <Text style={styles.confirmText}>הוסף</Text>
-          </TouchableOpacity>
+          <Button label="הוסף" onPress={doAdd} style={styles.confirm} />
         </View>
       )}
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  searchWrap: { flexDirection: 'row', padding: 16, paddingBottom: 4, gap: 10 },
+  searchWrap: { flexDirection: 'row', padding: 18, paddingBottom: 8, gap: 10 },
   search: {
     flex: 1,
     backgroundColor: colors.card,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderRadius: radius.md,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
     color: colors.text,
+    fontFamily: fonts.medium,
     fontSize: 16,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
   },
   newBtn: {
-    backgroundColor: colors.cardAlt,
-    borderRadius: 12,
+    borderRadius: radius.md,
     paddingHorizontal: 16,
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 1.5,
+    borderColor: colors.volt,
+    backgroundColor: colors.voltGlow,
   },
-  newBtnText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
-  food: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
+  newBtnText: { fontFamily: fonts.extrabold, color: colors.volt, fontSize: 14 },
+
+  food: { marginBottom: 10 },
+  foodSel: { borderColor: colors.volt, backgroundColor: colors.cardAlt },
+  foodPad: { flexDirection: 'row', alignItems: 'center', padding: 15, paddingStart: 18 },
+  foodNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  foodName: { fontFamily: fonts.bold, fontSize: 16, color: colors.text, flexShrink: 1 },
+  tag: {
+    fontFamily: fonts.extrabold, fontSize: 10, color: colors.ink, backgroundColor: colors.volt,
+    paddingHorizontal: 6, paddingVertical: 1, borderRadius: radius.sm, overflow: 'hidden',
   },
-  foodSelected: { borderColor: colors.primary, backgroundColor: colors.cardAlt },
-  foodName: { color: colors.text, fontSize: 16, fontWeight: '600' },
-  foodSub: { color: colors.textDim, fontSize: 13, marginTop: 2 },
-  macro: { fontSize: 13, fontWeight: '700' },
-  empty: { color: colors.textDim, textAlign: 'center', marginTop: 30, fontSize: 15 },
+  foodSub: { fontFamily: fonts.regular, fontSize: 13, color: colors.textDim, marginTop: 3 },
+  foodMacros: { alignItems: 'flex-end', gap: 2 },
+  macro: { fontFamily: fonts.extrabold, fontSize: 14 },
+  macroUnit: { fontFamily: fonts.medium, fontSize: 10, color: colors.textDim },
+  empty: { fontFamily: fonts.regular, color: colors.textDim, textAlign: 'center', marginTop: 36, fontSize: 15, lineHeight: 24 },
+
   addBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 14,
-    backgroundColor: colors.cardAlt,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    position: 'absolute', left: 0, right: 0, bottom: 0,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    padding: 16, paddingBottom: 22,
+    backgroundColor: colors.bgElev,
+    borderTopWidth: 1.5, borderTopColor: colors.border,
   },
-  selName: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  selSub: { color: colors.textDim, fontSize: 12 },
+  selName: { fontFamily: fonts.bold, fontSize: 15, color: colors.text },
+  selSub: { fontFamily: fonts.regular, fontSize: 12, color: colors.textDim, marginTop: 1 },
   qty: {
-    width: 56,
-    backgroundColor: colors.bg,
-    borderRadius: 10,
-    paddingVertical: 10,
-    textAlign: 'center',
-    color: colors.text,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
+    width: 58, backgroundColor: colors.bg, borderRadius: radius.sm, paddingVertical: 11,
+    textAlign: 'center', color: colors.text, fontFamily: fonts.extrabold, fontSize: 17,
+    borderWidth: 1.5, borderColor: colors.border,
   },
-  servings: { color: colors.textDim, fontSize: 13 },
-  confirm: { backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 18, paddingVertical: 12 },
-  confirmText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  servings: { fontFamily: fonts.medium, color: colors.textDim, fontSize: 13 },
+  confirm: { paddingHorizontal: 22, paddingVertical: 13 },
 });

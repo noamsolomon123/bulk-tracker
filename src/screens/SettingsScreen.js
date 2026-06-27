@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Switch, ScrollView, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Screen from '../components/Screen';
+import Card from '../components/Card';
 import { useApp } from '../context/AppContext';
 import { formatTime } from '../utils/notifications';
-import { colors } from '../theme';
+import { colors, fonts, radius } from '../theme';
 
 export default function SettingsScreen() {
   const { settings, setRemindersEnabled } = useApp();
@@ -14,82 +15,82 @@ export default function SettingsScreen() {
     const ok = await setRemindersEnabled(value);
     setBusy(false);
     if (value && !ok) {
-      Alert.alert(
-        'ההתראות חסומות',
-        'אפשר הרשאת התראות לאפליקציה הזו בהגדרות המכשיר כדי לקבל תזכורות ארוחה.'
-      );
+      Alert.alert('ההתראות חסומות', 'אפשר הרשאת התראות לאפליקציה הזו בהגדרות המכשיר כדי לקבל תזכורות ארוחה.');
     }
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <Screen glow="volt">
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Text style={styles.overline}>הגדרות · תזכורות</Text>
         <Text style={styles.title}>הגדרות</Text>
 
-        <View style={styles.card}>
+        <Card>
           <View style={styles.row}>
-            <View style={{ flex: 1, paddingRight: 12 }}>
+            <View style={{ flex: 1, paddingEnd: 14 }}>
               <Text style={styles.rowLabel}>תזכורות ארוחה</Text>
-              <Text style={styles.rowSub}>
-                קבל התראה מקומית בזמני הארוחות כדי להזכיר לך לאכול ולרשום את המזון.
-              </Text>
+              <Text style={styles.rowSub}>קבל התראה מקומית בזמני הארוחות כדי להזכיר לך לאכול ולרשום את המזון.</Text>
             </View>
             <Switch
               value={settings.remindersEnabled}
               onValueChange={onToggle}
               disabled={busy}
-              trackColor={{ true: colors.primary, false: colors.cardAlt }}
-              thumbColor="#fff"
+              trackColor={{ true: colors.volt, false: colors.surface3 }}
+              thumbColor={settings.remindersEnabled ? colors.ink : '#E8E0CE'}
+              ios_backgroundColor={colors.surface3}
             />
           </View>
-        </View>
+        </Card>
 
         <Text style={styles.section}>לוח התזכורות</Text>
-        <View style={styles.card}>
+        <Card padded={false}>
           {settings.reminderTimes.map((t, i) => (
-            <View
-              key={`${t.hour}-${t.minute}`}
-              style={[styles.timeRow, i > 0 && styles.timeBorder]}
-            >
-              <Text style={styles.timeLabel}>{t.label}</Text>
+            <View key={`${t.hour}-${t.minute}`} style={[styles.timeRow, i > 0 && styles.timeBorder]}>
+              <View style={styles.timeLeft}>
+                <View style={[styles.dot, { backgroundColor: settings.remindersEnabled ? colors.volt : colors.textFaint }]} />
+                <Text style={styles.timeLabel}>{t.label}</Text>
+              </View>
               <Text style={styles.timeValue}>{formatTime(t)}</Text>
             </View>
           ))}
-          <Text style={styles.scheduleNote}>
-            {settings.remindersEnabled
-              ? 'התזכורות פעילות וחוזרות מדי יום.'
-              : 'הפעל את תזכורות הארוחה למעלה כדי להפעיל את הלוח.'}
-          </Text>
-        </View>
-
-        <Text style={styles.privacy}>
-          🔒 כל הנתונים שלך — פרופיל, מזונות ויומן — נשמרים 100% מקומית במכשיר הזה. שום דבר לא נשלח
-          לשרת כלשהו.
+        </Card>
+        <Text style={styles.scheduleNote}>
+          {settings.remindersEnabled ? 'התזכורות פעילות וחוזרות מדי יום.' : 'הפעל את תזכורות הארוחה למעלה כדי להפעיל את הלוח.'}
         </Text>
+
+        <Card style={styles.privacyCard} accent={colors.volt} padded={false}>
+          <View style={styles.privacyPad}>
+            <Text style={styles.privacyTitle}>🔒 פרטיות מלאה</Text>
+            <Text style={styles.privacyText}>
+              כל הנתונים שלך — פרופיל, מזונות ויומן — נשמרים 100% מקומית במכשיר הזה. שום דבר לא נשלח לשרת כלשהו.
+            </Text>
+          </View>
+        </Card>
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 16, paddingBottom: 40 },
-  title: { color: colors.text, fontSize: 26, fontWeight: '800', marginBottom: 18 },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
+  content: { padding: 18, paddingBottom: 40 },
+  overline: { fontFamily: fonts.bold, fontSize: 12, letterSpacing: 2, color: colors.volt, marginBottom: 4 },
+  title: { fontFamily: fonts.display, fontSize: 30, color: colors.text, marginBottom: 18 },
+
   row: { flexDirection: 'row', alignItems: 'center' },
-  rowLabel: { color: colors.text, fontSize: 17, fontWeight: '700' },
-  rowSub: { color: colors.textDim, fontSize: 13, marginTop: 4, lineHeight: 18 },
-  section: { color: colors.text, fontSize: 16, fontWeight: '700', marginTop: 24, marginBottom: 8 },
-  timeRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12 },
-  timeBorder: { borderTopWidth: 1, borderTopColor: colors.border },
-  timeLabel: { color: colors.text, fontSize: 15 },
-  timeValue: { color: colors.primary, fontSize: 15, fontWeight: '700' },
-  scheduleNote: { color: colors.textDim, fontSize: 12, marginTop: 10 },
-  privacy: { color: colors.textDim, fontSize: 13, marginTop: 26, lineHeight: 19, textAlign: 'center' },
+  rowLabel: { fontFamily: fonts.bold, color: colors.text, fontSize: 17 },
+  rowSub: { fontFamily: fonts.regular, color: colors.textDim, fontSize: 13, marginTop: 5, lineHeight: 19 },
+
+  section: { fontFamily: fonts.display, fontSize: 17, color: colors.text, marginTop: 26, marginBottom: 12 },
+  timeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 18 },
+  timeBorder: { borderTopWidth: 1, borderTopColor: colors.borderSoft },
+  timeLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dot: { width: 8, height: 8, borderRadius: 8 },
+  timeLabel: { fontFamily: fonts.medium, color: colors.text, fontSize: 15 },
+  timeValue: { fontFamily: fonts.extrabold, color: colors.volt, fontSize: 16, letterSpacing: 0.5 },
+  scheduleNote: { fontFamily: fonts.regular, color: colors.textFaint, fontSize: 12, marginTop: 10 },
+
+  privacyCard: { marginTop: 26 },
+  privacyPad: { padding: 18, paddingStart: 22 },
+  privacyTitle: { fontFamily: fonts.bold, color: colors.text, fontSize: 15, marginBottom: 6 },
+  privacyText: { fontFamily: fonts.regular, color: colors.textDim, fontSize: 13, lineHeight: 20 },
 });
