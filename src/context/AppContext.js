@@ -83,7 +83,7 @@ export function AppProvider({ children }) {
       id: makeId('food'),
       custom: true,
       name: food.name.trim(),
-      servingLabel: food.servingLabel?.trim() || '1 serving',
+      servingLabel: food.servingLabel?.trim() || 'מנה',
       calories: Number(food.calories) || 0,
       protein: Number(food.protein) || 0,
     };

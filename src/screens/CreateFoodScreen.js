@@ -47,7 +47,7 @@ export default function CreateFoodScreen({ navigation }) {
     }
     addCustomFood({
       name,
-      servingLabel: serving || '1 serving',
+      servingLabel: serving || 'מנה',
       calories: cal,
       protein: isNaN(pro) ? 0 : pro,
     });
