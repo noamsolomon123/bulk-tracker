@@ -27,7 +27,7 @@ export default function AddFoodScreen({ navigation }) {
   const doAdd = () => {
     const n = parseFloat(qty.replace(',', '.'));
     if (!selected || !n || n <= 0) {
-      Alert.alert('Enter a quantity', 'Please enter how many servings you ate.');
+      Alert.alert('הזן כמות', 'אנא הזן כמה מנות אכלת.');
       return;
     }
     addLogEntry(selected, n);
@@ -35,10 +35,10 @@ export default function AddFoodScreen({ navigation }) {
   };
 
   const removeCustom = (food) => {
-    Alert.alert('Delete custom food', `Delete "${food.name}" from your foods?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert('מחיקת מזון שלי', `למחוק את "${food.name}" מהמזונות שלך?`, [
+      { text: 'ביטול', style: 'cancel' },
       {
-        text: 'Delete',
+        text: 'מחק',
         style: 'destructive',
         onPress: () => {
           deleteCustomFood(food.id);
@@ -53,7 +53,7 @@ export default function AddFoodScreen({ navigation }) {
       <View style={styles.searchWrap}>
         <TextInput
           style={styles.search}
-          placeholder="Search foods…"
+          placeholder="חיפוש מזון…"
           placeholderTextColor={colors.textDim}
           value={query}
           onChangeText={setQuery}
@@ -62,7 +62,7 @@ export default function AddFoodScreen({ navigation }) {
           style={styles.newBtn}
           onPress={() => navigation.navigate('CreateFood')}
         >
-          <Text style={styles.newBtnText}>+ New</Text>
+          <Text style={styles.newBtnText}>+ חדש</Text>
         </TouchableOpacity>
       </View>
 
@@ -81,19 +81,19 @@ export default function AddFoodScreen({ navigation }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.foodName}>
                   {item.name}
-                  {item.custom ? '  ·  custom' : ''}
+                  {item.custom ? '  ·  שלי' : ''}
                 </Text>
                 <Text style={styles.foodSub}>{item.servingLabel}</Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={[styles.macro, { color: colors.calories }]}>{item.calories} kcal</Text>
-                <Text style={[styles.macro, { color: colors.protein }]}>{item.protein} g protein</Text>
+                <Text style={[styles.macro, { color: colors.calories }]}>{item.calories} קק״ל</Text>
+                <Text style={[styles.macro, { color: colors.protein }]}>{item.protein} גרם חלבון</Text>
               </View>
             </TouchableOpacity>
           );
         }}
         ListEmptyComponent={
-          <Text style={styles.empty}>No foods match “{query}”. Tap “+ New” to create one.</Text>
+          <Text style={styles.empty}>אין מזונות שתואמים ל“{query}”. הקש “+ חדש” כדי ליצור.</Text>
         }
       />
 
@@ -101,7 +101,7 @@ export default function AddFoodScreen({ navigation }) {
         <View style={styles.addBar}>
           <View style={{ flex: 1 }}>
             <Text style={styles.selName}>{selected.name}</Text>
-            <Text style={styles.selSub}>per {selected.servingLabel}</Text>
+            <Text style={styles.selSub}>לכל {selected.servingLabel}</Text>
           </View>
           <TextInput
             style={styles.qty}
@@ -110,9 +110,9 @@ export default function AddFoodScreen({ navigation }) {
             onChangeText={setQty}
             selectTextOnFocus
           />
-          <Text style={styles.servings}>servings</Text>
+          <Text style={styles.servings}>מנות</Text>
           <TouchableOpacity style={styles.confirm} onPress={doAdd}>
-            <Text style={styles.confirmText}>Add</Text>
+            <Text style={styles.confirmText}>הוסף</Text>
           </TouchableOpacity>
         </View>
       )}

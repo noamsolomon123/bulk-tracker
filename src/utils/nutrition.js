@@ -1,17 +1,17 @@
 // Nutrition goal calculations for a caloric surplus (muscle gain).
 
 export const ACTIVITY_LEVELS = [
-  { key: 'sedentary', label: 'Sedentary (little/no exercise)', factor: 1.2 },
-  { key: 'light', label: 'Light (1-3 days/week)', factor: 1.375 },
-  { key: 'moderate', label: 'Moderate (3-5 days/week)', factor: 1.55 },
-  { key: 'active', label: 'Active (6-7 days/week)', factor: 1.725 },
-  { key: 'veryActive', label: 'Very Active (hard daily training)', factor: 1.9 },
+  { key: 'sedentary', label: 'יושבני (מעט/ללא פעילות)', factor: 1.2 },
+  { key: 'light', label: 'קל (1-3 ימים בשבוע)', factor: 1.375 },
+  { key: 'moderate', label: 'בינוני (3-5 ימים בשבוע)', factor: 1.55 },
+  { key: 'active', label: 'פעיל (6-7 ימים בשבוע)', factor: 1.725 },
+  { key: 'veryActive', label: 'פעיל מאוד (אימון יומי קשה)', factor: 1.9 },
 ];
 
 export const SURPLUS_LEVELS = [
-  { key: 'lean', label: 'Lean bulk (+250 kcal)', surplus: 250 },
-  { key: 'standard', label: 'Standard bulk (+400 kcal)', surplus: 400 },
-  { key: 'aggressive', label: 'Aggressive bulk (+600 kcal)', surplus: 600 },
+  { key: 'lean', label: 'מסה רזה (+250 קק״ל)', surplus: 250 },
+  { key: 'standard', label: 'מסה רגילה (+400 קק״ל)', surplus: 400 },
+  { key: 'aggressive', label: 'מסה אגרסיבית (+600 קק״ל)', surplus: 600 },
 ];
 
 export const DEFAULT_PROFILE = {

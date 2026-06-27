@@ -6,7 +6,7 @@ import ProgressBar from '../components/ProgressBar';
 import { colors } from '../theme';
 
 function prettyDate(d = new Date()) {
-  return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('he-IL', { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
 export default function HomeScreen({ navigation }) {
@@ -14,9 +14,9 @@ export default function HomeScreen({ navigation }) {
   const day = getDay();
 
   const confirmDelete = (entry) => {
-    Alert.alert('Remove entry', `Remove ${entry.name}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => deleteLogEntry(entry.id) },
+    Alert.alert('הסרת פריט', `להסיר ${entry.name}?`, [
+      { text: 'ביטול', style: 'cancel' },
+      { text: 'הסר', style: 'destructive', onPress: () => deleteLogEntry(entry.id) },
     ]);
   };
 
@@ -29,30 +29,30 @@ export default function HomeScreen({ navigation }) {
         ListHeaderComponent={
           <View>
             <Text style={styles.date}>{prettyDate()}</Text>
-            <Text style={styles.title}>Today's Progress</Text>
+            <Text style={styles.title}>ההתקדמות שלך היום</Text>
 
             <View style={styles.card}>
               <ProgressBar
-                label="Calories"
+                label="קלוריות"
                 value={day.calories}
                 goal={goals.calories}
-                unit="kcal"
+                unit="קק״ל"
                 color={colors.calories}
               />
               <ProgressBar
-                label="Protein"
+                label="חלבון"
                 value={day.protein}
                 goal={goals.protein}
-                unit="g"
+                unit="גרם"
                 color={colors.protein}
               />
             </View>
 
             <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('AddFood')}>
-              <Text style={styles.addBtnText}>+ Add Food</Text>
+              <Text style={styles.addBtnText}>+ הוספת מזון</Text>
             </TouchableOpacity>
 
-            <Text style={styles.section}>Logged today ({day.entries.length})</Text>
+            <Text style={styles.section}>נרשם היום ({day.entries.length})</Text>
           </View>
         }
         renderItem={({ item }) => (
@@ -64,19 +64,19 @@ export default function HomeScreen({ navigation }) {
               </Text>
             </View>
             <View style={styles.entryMacros}>
-              <Text style={[styles.macro, { color: colors.calories }]}>{item.calories} kcal</Text>
-              <Text style={[styles.macro, { color: colors.protein }]}>{item.protein} g</Text>
+              <Text style={[styles.macro, { color: colors.calories }]}>{item.calories} קק״ל</Text>
+              <Text style={[styles.macro, { color: colors.protein }]}>{item.protein} גרם</Text>
             </View>
           </TouchableOpacity>
         )}
         ListEmptyComponent={
           hydrated ? (
-            <Text style={styles.empty}>No food logged yet today. Tap “Add Food” to start.</Text>
+            <Text style={styles.empty}>עדיין לא רשמת מזון היום. הקש “הוספת מזון” כדי להתחיל.</Text>
           ) : null
         }
         ListFooterComponent={
           day.entries.length > 0 ? (
-            <Text style={styles.hint}>Tip: long-press an entry to remove it.</Text>
+            <Text style={styles.hint}>טיפ: לחיצה ארוכה על פריט מסירה אותו.</Text>
           ) : null
         }
       />

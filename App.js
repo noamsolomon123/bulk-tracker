@@ -41,8 +41,8 @@ function HomeStack() {
   return (
     <Stack.Navigator screenOptions={headerOptions}>
       <Stack.Screen name="HomeMain" component={HomeScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="AddFood" component={AddFoodScreen} options={{ title: 'Add Food' }} />
-      <Stack.Screen name="CreateFood" component={CreateFoodScreen} options={{ title: 'New Custom Food' }} />
+      <Stack.Screen name="AddFood" component={AddFoodScreen} options={{ title: 'הוספת מזון' }} />
+      <Stack.Screen name="CreateFood" component={CreateFoodScreen} options={{ title: 'מזון שלי חדש' }} />
     </Stack.Navigator>
   );
 }
@@ -70,17 +70,17 @@ export default function App() {
             <Tab.Screen
               name="Home"
               component={HomeStack}
-              options={{ tabBarIcon: tabIcon('🍽️'), title: 'Today' }}
+              options={{ tabBarIcon: tabIcon('🍽️'), title: 'היום' }}
             />
             <Tab.Screen
               name="Profile"
               component={ProfileScreen}
-              options={{ tabBarIcon: tabIcon('💪'), title: 'Profile' }}
+              options={{ tabBarIcon: tabIcon('💪'), title: 'פרופיל' }}
             />
             <Tab.Screen
               name="Settings"
               component={SettingsScreen}
-              options={{ tabBarIcon: tabIcon('⚙️'), title: 'Settings' }}
+              options={{ tabBarIcon: tabIcon('⚙️'), title: 'הגדרות' }}
             />
           </Tab.Navigator>
         </NavigationContainer>

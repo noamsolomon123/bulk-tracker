@@ -1,14 +1,20 @@
 name: Build Android APK
 
-# Builds an installable .apk on every push and uploads it as a downloadable
-# artifact. Uses Expo "prebuild" (Continuous Native Generation) + Gradle, so it
-# needs NO Expo account, EAS token, or signing secrets — the release build is
+# Builds an installable .apk on every push and makes it downloadable two ways:
+#   1. As a GitHub Actions artifact (under the run's "Artifacts" section).
+#   2. As an asset on the "latest" GitHub Release  ->  the most obvious, one-tap
+#      download from your phone: <repo>/releases/latest
+#
+# Needs NO Expo account, EAS token, or signing secrets — the release build is
 # signed with the auto-generated debug keystore, which is fine for sideloading.
 
 on:
   push:
     branches: ['**']
   workflow_dispatch: {}
+
+permissions:
+  contents: write # required to publish the Release
 
 jobs:
   build-apk:
@@ -50,17 +56,34 @@ jobs:
           chmod +x ./gradlew
           ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
 
-      - name: Locate APK
+      - name: Collect & rename APK
         id: apk
         run: |
-          APK_PATH=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
-          echo "Found APK at: $APK_PATH"
-          echo "path=$APK_PATH" >> "$GITHUB_OUTPUT"
+          SRC=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
+          mkdir -p dist-apk
+          cp "$SRC" dist-apk/bulk-tracker.apk
+          echo "Built APK: $SRC"
+          echo "path=dist-apk/bulk-tracker.apk" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: bulk-tracker-apk
-          path: ${{ steps.apk.outputs.path }}
+          path: dist-apk/bulk-tracker.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish APK to "latest" Release
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: 📲 Latest APK
+          body: |
+            **מעקב מסה — ה-APK האחרון להתקנה בטלפון.**
+
+            הורד את `bulk-tracker.apk` למטה, פתח אותו במכשיר האנדרואיד ואשר התקנה ממקור לא ידוע.
+
+            Build `#${{ github.run_number }}` from commit ${{ github.sha }}.
+          files: dist-apk/bulk-tracker.apk
+          make_latest: true

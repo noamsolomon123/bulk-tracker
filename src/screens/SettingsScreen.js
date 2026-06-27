@@ -15,8 +15,8 @@ export default function SettingsScreen() {
     setBusy(false);
     if (value && !ok) {
       Alert.alert(
-        'Notifications blocked',
-        'Enable notification permission for this app in your device settings to receive meal reminders.'
+        'ההתראות חסומות',
+        'אפשר הרשאת התראות לאפליקציה הזו בהגדרות המכשיר כדי לקבל תזכורות ארוחה.'
       );
     }
   };
@@ -24,14 +24,14 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title}>הגדרות</Text>
 
         <View style={styles.card}>
           <View style={styles.row}>
             <View style={{ flex: 1, paddingRight: 12 }}>
-              <Text style={styles.rowLabel}>Meal reminders</Text>
+              <Text style={styles.rowLabel}>תזכורות ארוחה</Text>
               <Text style={styles.rowSub}>
-                Get a local notification at meal times to remind you to eat and log your food.
+                קבל התראה מקומית בזמני הארוחות כדי להזכיר לך לאכול ולרשום את המזון.
               </Text>
             </View>
             <Switch
@@ -44,7 +44,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <Text style={styles.section}>Reminder schedule</Text>
+        <Text style={styles.section}>לוח התזכורות</Text>
         <View style={styles.card}>
           {settings.reminderTimes.map((t, i) => (
             <View
@@ -57,14 +57,14 @@ export default function SettingsScreen() {
           ))}
           <Text style={styles.scheduleNote}>
             {settings.remindersEnabled
-              ? 'Reminders are active and repeat every day.'
-              : 'Turn on meal reminders above to activate this schedule.'}
+              ? 'התזכורות פעילות וחוזרות מדי יום.'
+              : 'הפעל את תזכורות הארוחה למעלה כדי להפעיל את הלוח.'}
           </Text>
         </View>
 
         <Text style={styles.privacy}>
-          🔒 All your data — profile, foods and logs — is stored 100% locally on this device. Nothing
-          is sent to any server.
+          🔒 כל הנתונים שלך — פרופיל, מזונות ויומן — נשמרים 100% מקומית במכשיר הזה. שום דבר לא נשלח
+          לשרת כלשהו.
         </Text>
       </ScrollView>
     </SafeAreaView>

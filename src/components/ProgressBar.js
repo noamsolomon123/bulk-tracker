@@ -26,8 +26,8 @@ export default function ProgressBar({ label, value, goal, unit, color }) {
       </View>
       <Text style={styles.sub}>
         {over
-          ? `${Math.round(value - goal)} ${unit} over goal`
-          : `${Math.round(remaining)} ${unit} remaining`}
+          ? `${Math.round(value - goal)} ${unit} מעל היעד`
+          : `נותרו ${Math.round(remaining)} ${unit}`}
       </Text>
     </View>
   );
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
   label: { color: colors.text, fontSize: 16, fontWeight: '600' },
   values: { fontSize: 15 },
   dim: { color: colors.textDim },
-  track: { height: 14, borderRadius: 7, backgroundColor: colors.cardAlt, overflow: 'hidden' },
+  track: { flexDirection: 'row', height: 14, borderRadius: 7, backgroundColor: colors.cardAlt, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 7 },
   sub: { color: colors.textDim, fontSize: 12, marginTop: 4 },
 });

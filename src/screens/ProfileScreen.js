@@ -66,40 +66,40 @@ export default function ProfileScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>Profile & Goals</Text>
+          <Text style={styles.title}>פרופיל ויעדים</Text>
 
           <View style={styles.goalCard}>
-            <Text style={styles.goalHeading}>Your daily targets (muscle gain)</Text>
+            <Text style={styles.goalHeading}>היעדים היומיים שלך (עלייה במסה)</Text>
             <View style={styles.goalRow}>
               <View style={styles.goalBox}>
                 <Text style={[styles.goalNum, { color: colors.calories }]}>{goals.calories}</Text>
-                <Text style={styles.goalUnit}>kcal / day</Text>
+                <Text style={styles.goalUnit}>קק״ל ביום</Text>
               </View>
               <View style={styles.goalBox}>
                 <Text style={[styles.goalNum, { color: colors.protein }]}>{goals.protein}</Text>
-                <Text style={styles.goalUnit}>g protein / day</Text>
+                <Text style={styles.goalUnit}>גרם חלבון ביום</Text>
               </View>
             </View>
             <Text style={styles.goalNote}>
-              BMR {goals.bmr} kcal · Maintenance {goals.tdee} kcal · auto-calculated for a surplus.
+              מטבוליזם בסיסי {goals.bmr} קק״ל · אחזקה {goals.tdee} קק״ל · מחושב אוטומטית לעודף קלורי.
             </Text>
           </View>
 
           <View style={styles.rowFields}>
-            <NumberField label="Height" unit="cm" value={profile.heightCm} onChangeText={num('heightCm')} />
-            <NumberField label="Weight" unit="kg" value={profile.weightKg} onChangeText={num('weightKg')} />
-            <NumberField label="Age" unit="yrs" value={profile.age} onChangeText={num('age')} />
+            <NumberField label="גובה" unit="ס״מ" value={profile.heightCm} onChangeText={num('heightCm')} />
+            <NumberField label="משקל" unit="ק״ג" value={profile.weightKg} onChangeText={num('weightKg')} />
+            <NumberField label="גיל" unit="שנים" value={profile.age} onChangeText={num('age')} />
           </View>
 
-          <Text style={styles.label}>Sex</Text>
+          <Text style={styles.label}>מין</Text>
           <Chips
-            options={[{ key: 'male', label: 'Male' }, { key: 'female', label: 'Female' }]}
+            options={[{ key: 'male', label: 'זכר' }, { key: 'female', label: 'נקבה' }]}
             valueKey="key"
             selected={profile.sex}
             onSelect={(v) => updateProfile({ sex: v })}
           />
 
-          <Text style={styles.label}>Activity level</Text>
+          <Text style={styles.label}>רמת פעילות</Text>
           <Chips
             options={ACTIVITY_LEVELS}
             valueKey="key"
@@ -107,7 +107,7 @@ export default function ProfileScreen() {
             onSelect={(v) => updateProfile({ activity: v })}
           />
 
-          <Text style={styles.label}>Bulking intensity</Text>
+          <Text style={styles.label}>עצימות עלייה במסה</Text>
           <Chips
             options={SURPLUS_LEVELS}
             valueKey="key"
@@ -115,7 +115,7 @@ export default function ProfileScreen() {
             onSelect={(v) => updateProfile({ surplus: v })}
           />
 
-          <Text style={styles.footer}>Changes are saved automatically on this device.</Text>
+          <Text style={styles.footer}>השינויים נשמרים אוטומטית במכשיר הזה.</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

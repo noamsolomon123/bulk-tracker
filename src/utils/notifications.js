@@ -3,10 +3,10 @@ import { Platform } from 'react-native';
 
 // Default meal reminder times (24h). Each fires daily when enabled.
 export const DEFAULT_REMINDER_TIMES = [
-  { hour: 8, minute: 0, label: 'Breakfast' },
-  { hour: 12, minute: 30, label: 'Lunch' },
-  { hour: 16, minute: 0, label: 'Snack' },
-  { hour: 20, minute: 0, label: 'Dinner' },
+  { hour: 8, minute: 0, label: 'ארוחת בוקר' },
+  { hour: 12, minute: 30, label: 'ארוחת צהריים' },
+  { hour: 16, minute: 0, label: 'חטיף' },
+  { hour: 20, minute: 0, label: 'ארוחת ערב' },
 ];
 
 // Foreground display behaviour.
@@ -22,7 +22,7 @@ Notifications.setNotificationHandler({
 export async function ensureAndroidChannel() {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('meal-reminders', {
-      name: 'Meal Reminders',
+      name: 'תזכורות ארוחה',
       importance: Notifications.AndroidImportance.HIGH,
       sound: 'default',
     });
@@ -53,8 +53,8 @@ export async function scheduleMealReminders(times = DEFAULT_REMINDER_TIMES) {
   for (const t of times) {
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: `Time to eat — ${t.label} 🍽️`,
-        body: 'Log your meal and keep hitting your calorie & protein goals.',
+        title: `הגיע הזמן לאכול — ${t.label} 🍽️`,
+        body: 'רשום את הארוחה והמשך לעמוד ביעדי הקלוריות והחלבון שלך.',
         ...(Platform.OS === 'android' ? { channelId: 'meal-reminders' } : {}),
       },
       trigger: {

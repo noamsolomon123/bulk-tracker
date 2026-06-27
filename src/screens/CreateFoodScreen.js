@@ -36,13 +36,13 @@ export default function CreateFoodScreen({ navigation }) {
 
   const save = () => {
     if (!name.trim()) {
-      Alert.alert('Name required', 'Please give your food a name.');
+      Alert.alert('נדרש שם', 'אנא הזן שם למזון שלך.');
       return;
     }
     const cal = parseFloat(calories.replace(',', '.'));
     const pro = parseFloat(protein.replace(',', '.'));
     if (isNaN(cal) || cal < 0) {
-      Alert.alert('Calories required', 'Enter the calories for one serving.');
+      Alert.alert('נדרשות קלוריות', 'הזן את הקלוריות למנה אחת.');
       return;
     }
     addCustomFood({
@@ -61,40 +61,40 @@ export default function CreateFoodScreen({ navigation }) {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>Create a custom food</Text>
+          <Text style={styles.title}>יצירת מזון שלי</Text>
           <Text style={styles.subtitle}>
-            Enter the nutrition for a single serving. It is saved on your device and reusable.
+            הזן את הערכים התזונתיים למנה אחת. הם נשמרים במכשיר וניתנים לשימוש חוזר.
           </Text>
 
           <Field
-            label="Food name"
-            placeholder="e.g. Protein Pancakes"
+            label="שם המזון"
+            placeholder="לדוגמה: פנקייק חלבון"
             value={name}
             onChangeText={setName}
           />
           <Field
-            label="Serving description"
-            placeholder="e.g. 2 pancakes / 100 g / 1 cup"
+            label="תיאור המנה"
+            placeholder="לדוגמה: 2 פנקייק / 100 גרם / כוס"
             value={serving}
             onChangeText={setServing}
           />
           <Field
-            label="Calories per serving (kcal)"
-            placeholder="e.g. 250"
+            label="קלוריות למנה (קק״ל)"
+            placeholder="לדוגמה: 250"
             keyboardType="numeric"
             value={calories}
             onChangeText={setCalories}
           />
           <Field
-            label="Protein per serving (g)"
-            placeholder="e.g. 20"
+            label="חלבון למנה (גרם)"
+            placeholder="לדוגמה: 20"
             keyboardType="numeric"
             value={protein}
             onChangeText={setProtein}
           />
 
           <TouchableOpacity style={styles.save} onPress={save}>
-            <Text style={styles.saveText}>Save Food</Text>
+            <Text style={styles.saveText}>שמירת מזון</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
