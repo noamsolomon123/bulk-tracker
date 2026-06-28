@@ -1,7 +1,9 @@
 // Gemini-powered food nutrition lookup. The API key is supplied by the user
 // (pasted in Settings, stored locally) — never bundled into the app.
 
-const MODEL = 'gemini-2.0-flash';
+import { GEMINI_TEXT_MODEL, TEXT_THINKING } from './aiModels';
+
+const MODEL = GEMINI_TEXT_MODEL;
 const ENDPOINT = (key) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(key)}`;
 
@@ -31,7 +33,12 @@ export async function lookupFoodNutrition(query, apiKey) {
 
   const body = {
     contents: [{ role: 'user', parts: [{ text: PROMPT(query) }] }],
-    generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, temperature: 0.2 },
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema: SCHEMA,
+      temperature: 0.2,
+      thinkingConfig: { thinkingLevel: TEXT_THINKING },
+    },
   };
 
   let res;
@@ -80,7 +87,7 @@ export async function testGeminiKey(apiKey) {
   if (!apiKey || !apiKey.trim()) throw new Error('NO_KEY');
   const body = {
     contents: [{ role: 'user', parts: [{ text: 'ping' }] }],
-    generationConfig: { maxOutputTokens: 1, temperature: 0 },
+    generationConfig: { maxOutputTokens: 5, temperature: 0, thinkingConfig: { thinkingLevel: TEXT_THINKING } },
   };
   let res;
   try {

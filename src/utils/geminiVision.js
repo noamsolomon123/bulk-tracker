@@ -3,8 +3,9 @@
 // where possible (the biggest accuracy lever), falling back to the LLM's numbers.
 import { VISION_PROMPT, REFERENCE_LINE_TEMPLATE } from './visionPrompt';
 import { groundItem } from './nutritionDb';
+import { GEMINI_VISION_MODEL, VISION_THINKING } from './aiModels';
 
-const MODEL = 'gemini-2.5-flash';
+const MODEL = GEMINI_VISION_MODEL;
 const ENDPOINT = (key) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(key)}`;
 
@@ -61,7 +62,12 @@ export async function analyzePlatePhoto({ images, apiKey, reference = 'none' }) 
 
   const body = {
     contents: [{ role: 'user', parts }],
-    generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, temperature: 0.2 },
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema: SCHEMA,
+      temperature: 0.2,
+      thinkingConfig: { thinkingLevel: VISION_THINKING },
+    },
   };
 
   let res;
