@@ -69,6 +69,7 @@ export default function HomeScreen({ navigation }) {
             </Card>
 
             <Button label="הוספת מזון" icon="＋" onPress={() => navigation.navigate('AddFood')} style={styles.cta} />
+            <Button label="נתח צלחת (AI)" icon="📸" tone="amber" onPress={() => navigation.navigate('PhotoAnalyze')} style={styles.cta2} />
 
             <View style={styles.sectionRow}>
               <Text style={styles.section}>נרשם היום</Text>
@@ -123,6 +124,7 @@ const styles = StyleSheet.create({
   proteinWrap: { padding: 18 },
 
   cta: { marginTop: 16 },
+  cta2: { marginTop: 10 },
 
   sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 26, marginBottom: 8 },
   section: { fontFamily: fonts.display, fontSize: 19, color: colors.text },

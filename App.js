@@ -21,6 +21,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import AddFoodScreen from './src/screens/AddFoodScreen';
 import CreateFoodScreen from './src/screens/CreateFoodScreen';
 import ScanBarcodeScreen from './src/screens/ScanBarcodeScreen';
+import PhotoAnalyzeScreen from './src/screens/PhotoAnalyzeScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import StatsScreen from './src/screens/StatsScreen';
@@ -57,6 +58,7 @@ function HomeStack() {
       <Stack.Screen name="AddFood" component={AddFoodScreen} options={{ title: 'הוספת מזון' }} />
       <Stack.Screen name="CreateFood" component={CreateFoodScreen} options={{ title: 'מזון שלי חדש' }} />
       <Stack.Screen name="ScanBarcode" component={ScanBarcodeScreen} options={{ title: 'סריקת ברקוד' }} />
+      <Stack.Screen name="PhotoAnalyze" component={PhotoAnalyzeScreen} options={{ title: 'ניתוח צלחת' }} />
     </Stack.Navigator>
   );
 }

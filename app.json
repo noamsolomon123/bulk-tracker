@@ -42,7 +42,14 @@
           "cameraPermission": "האפליקציה משתמשת במצלמה כדי לסרוק ברקודים של מוצרי מזון."
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "האפליקציה ניגשת לתמונות כדי לנתח צילומי צלחת.",
+          "cameraPermission": "האפליקציה משתמשת במצלמה כדי לצלם ולנתח את הצלחת."
+        }
+      ]
     ]
   }
 }
