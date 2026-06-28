@@ -13,32 +13,54 @@ const ERRORS = {
   BAD_KEY: 'המפתח שגוי או נדחה. בדוק אותו בהגדרות.',
   RATE_LIMIT: 'חרגת ממכסת הבקשות. נסה שוב בעוד דקה.',
   NETWORK: 'אין חיבור לאינטרנט.',
-  EMPTY: 'לא זוהו פריטי מזון בתמונה. נסה תמונה ברורה יותר.',
+  EMPTY: 'לא זוהו פריטי מזון. נסה תמונה ברורה יותר.',
 };
 
-const REF_ORDER = ['card', 'coin10', 'coin5', 'none'];
+const REF_ORDER = ['none', 'card', 'coin10', 'coin5'];
+const SLOT_LABELS = ['מלמעלה', 'זווית 45°'];
 
 let uid = 0;
 
 export default function PhotoAnalyzeScreen({ navigation }) {
   const { settings, addLogEntry } = useApp();
-  const [reference, setReference] = useState('card');
+  const [reference, setReference] = useState('none');
   const [phase, setPhase] = useState('pick'); // pick | loading | result
-  const [imageUri, setImageUri] = useState(null);
+  const [photos, setPhotos] = useState([]); // { uri, base64, mimeType }
   const [items, setItems] = useState([]);
   const [assumptions, setAssumptions] = useState('');
 
-  const analyze = async (asset) => {
+  const addPhoto = async (fromCamera) => {
+    if (photos.length >= 2) {
+      Alert.alert('מקסימום 2 תמונות', 'הסר תמונה כדי להוסיף אחרת.');
+      return;
+    }
+    const perm = fromCamera
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('הרשאה נדרשת', fromCamera ? 'אשר גישה למצלמה.' : 'אשר גישה לתמונות.');
+      return;
+    }
+    const opts = { base64: true, quality: 0.4, mediaTypes: ['images'] };
+    const res = fromCamera ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
+    if (!res.canceled && res.assets && res.assets[0]) {
+      const a = res.assets[0];
+      setPhotos((p) => [...p, { uri: a.uri, base64: a.base64, mimeType: a.mimeType || 'image/jpeg' }]);
+    }
+  };
+
+  const removePhoto = (i) => setPhotos((p) => p.filter((_, idx) => idx !== i));
+
+  const analyze = async () => {
     if (!settings.geminiKey || !settings.geminiKey.trim()) {
       Alert.alert('דרוש מפתח', 'הוסף מפתח Gemini במסך ההגדרות כדי לנתח תמונות.');
       return;
     }
-    setImageUri(asset.uri);
+    if (!photos.length) return;
     setPhase('loading');
     try {
       const r = await analyzePlatePhoto({
-        base64: asset.base64,
-        mimeType: asset.mimeType || 'image/jpeg',
+        images: photos.map((p) => ({ base64: p.base64, mimeType: p.mimeType })),
         apiKey: settings.geminiKey,
         reference,
       });
@@ -46,6 +68,7 @@ export default function PhotoAnalyzeScreen({ navigation }) {
         r.items.map((it) => ({
           id: `ph-${uid++}`,
           name: it.name,
+          source: it.source,
           gramsStr: String(it.grams),
           calories: it.calories,
           protein: it.protein,
@@ -62,19 +85,6 @@ export default function PhotoAnalyzeScreen({ navigation }) {
     }
   };
 
-  const capture = async (fromCamera) => {
-    const perm = fromCamera
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('הרשאה נדרשת', fromCamera ? 'אשר גישה למצלמה.' : 'אשר גישה לתמונות.');
-      return;
-    }
-    const opts = { base64: true, quality: 0.4, mediaTypes: ['images'] };
-    const res = fromCamera ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
-    if (!res.canceled && res.assets && res.assets[0]) analyze(res.assets[0]);
-  };
-
   const setGrams = (id, text) => {
     const g = parseFloat(text.replace(',', '.'));
     setItems((prev) =>
@@ -87,7 +97,6 @@ export default function PhotoAnalyzeScreen({ navigation }) {
   };
 
   const removeItem = (id) => setItems((prev) => prev.filter((it) => it.id !== id));
-
   const total = items.reduce((a, it) => ({ cal: a.cal + it.calories, pro: a.pro + it.protein }), { cal: 0, pro: 0 });
 
   const addAll = () => {
@@ -98,16 +107,18 @@ export default function PhotoAnalyzeScreen({ navigation }) {
     navigation.popToTop();
   };
 
+  const reset = () => { setPhase('pick'); setItems([]); setPhotos([]); };
+
   return (
     <Screen edges={['bottom']} glow="amber">
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {phase !== 'result' ? (
           <>
             <Text style={styles.lead}>
-              צלם את הצלחת והנח לידה <Text style={{ color: colors.volt, fontFamily: fonts.bold }}>עצם בגודל ידוע</Text> כסרגל — כך ה‑AI מעריך מנות מדויק יותר.
+              לדיוק מרבי צלם <Text style={{ color: colors.volt, fontFamily: fonts.bold }}>שתי תמונות</Text> של אותה צלחת: אחת מלמעלה ואחת בזווית ~45° (כדי לראות גובה). תמונה אחת גם עובדת.
             </Text>
 
-            <Text style={styles.label}>עצם הייחוס בתמונה</Text>
+            <Text style={styles.label}>עוגן קנה-מידה (אופציונלי)</Text>
             <View style={styles.refRow}>
               {REF_ORDER.map((k) => {
                 const on = reference === k;
@@ -118,11 +129,23 @@ export default function PhotoAnalyzeScreen({ navigation }) {
                 );
               })}
             </View>
-            {reference === 'card' ? (
-              <Text style={styles.tip}>טיפ: כרטיס אשראי/תעודה הוא 85.6×54 מ״מ — מדויק ותמיד איתך. הנח אותו שטוח ליד הצלחת.</Text>
-            ) : null}
+            <Text style={styles.tip}>
+              {reference === 'none'
+                ? 'ברירת מחדל: ה‑AI משתמש בצלחת/מזלג כסרגל. לדיוק נוסף אפשר להניח כרטיס אשראי (85.6×54 מ״מ) ולבחור בו.'
+                : 'הנח את עצם הייחוס שטוח ליד הצלחת, באותו מישור.'}
+            </Text>
 
-            {imageUri && phase === 'loading' ? <Image source={{ uri: imageUri }} style={styles.preview} /> : null}
+            {photos.length ? (
+              <View style={styles.thumbs}>
+                {photos.map((p, i) => (
+                  <View key={i} style={styles.thumbBox}>
+                    <Image source={{ uri: p.uri }} style={styles.thumb} />
+                    <Text style={styles.thumbLabel}>{SLOT_LABELS[i] || `תמונה ${i + 1}`}</Text>
+                    <Pressable style={styles.thumbDel} onPress={() => removePhoto(i)} hitSlop={6}><Text style={styles.thumbDelTxt}>✕</Text></Pressable>
+                  </View>
+                ))}
+              </View>
+            ) : null}
 
             {phase === 'loading' ? (
               <View style={styles.loading}>
@@ -131,14 +154,21 @@ export default function PhotoAnalyzeScreen({ navigation }) {
               </View>
             ) : (
               <View style={styles.actions}>
-                <Button label="צלם תמונה" icon="📷" onPress={() => capture(true)} style={{ marginBottom: 12 }} />
-                <Button label="בחר מהגלריה" icon="🖼️" tone="amber" onPress={() => capture(false)} />
+                {photos.length < 2 ? (
+                  <View style={styles.pickRow}>
+                    <Button label="צלם" icon="📷" onPress={() => addPhoto(true)} style={styles.pickBtn} />
+                    <Button label="גלריה" icon="🖼️" tone="amber" onPress={() => addPhoto(false)} style={styles.pickBtn} />
+                  </View>
+                ) : null}
+                {photos.length ? (
+                  <Button label={`נתח ${photos.length} תמונות`} icon="✨" onPress={analyze} style={{ marginTop: 14 }} />
+                ) : null}
               </View>
             )}
           </>
         ) : (
           <>
-            {imageUri ? <Image source={{ uri: imageUri }} style={styles.preview} /> : null}
+            {photos[0] ? <Image source={{ uri: photos[0].uri }} style={styles.preview} /> : null}
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>סה״כ מהצלחת</Text>
               <Text style={styles.totalVal}>
@@ -151,10 +181,15 @@ export default function PhotoAnalyzeScreen({ navigation }) {
             <Text style={styles.editHint}>בדוק ותקן גרמים לפי הצורך — הקלוריות מתעדכנות אוטומטית.</Text>
 
             {items.map((it) => (
-              <Card key={it.id} accent={colors.amber} padded={false} style={styles.item}>
+              <Card key={it.id} accent={it.source === 'db' ? colors.volt : colors.amber} padded={false} style={styles.item}>
                 <View style={styles.itemPad}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.itemName} numberOfLines={1}>{it.name}</Text>
+                    <View style={styles.itemNameRow}>
+                      <Text style={styles.itemName} numberOfLines={1}>{it.name}</Text>
+                      <Text style={[styles.srcTag, { backgroundColor: it.source === 'db' ? colors.volt : colors.surface3, color: it.source === 'db' ? colors.ink : colors.textDim }]}>
+                        {it.source === 'db' ? 'מאגר' : 'AI'}
+                      </Text>
+                    </View>
                     <Text style={styles.itemMacro}>
                       <Text style={{ color: colors.amber, fontFamily: fonts.extrabold }}>{it.calories}</Text>
                       <Text style={styles.itemUnit}> קק״ל · </Text>
@@ -174,9 +209,7 @@ export default function PhotoAnalyzeScreen({ navigation }) {
             {assumptions ? <Text style={styles.assume}>📝 {assumptions}</Text> : null}
 
             <Button label={`הוסף ${items.length} פריטים ליומן`} icon="＋" onPress={addAll} style={{ marginTop: 16 }} />
-            <Pressable onPress={() => { setPhase('pick'); setItems([]); setImageUri(null); }} style={styles.again}>
-              <Text style={styles.againTxt}>נתח תמונה אחרת</Text>
-            </Pressable>
+            <Pressable onPress={reset} style={styles.again}><Text style={styles.againTxt}>נתח צלחת אחרת</Text></Pressable>
           </>
         )}
       </ScrollView>
@@ -195,10 +228,19 @@ const styles = StyleSheet.create({
   refTxtOn: { color: colors.ink },
   tip: { fontFamily: fonts.regular, fontSize: 12, color: colors.textFaint, marginTop: 10, lineHeight: 18 },
 
-  actions: { marginTop: 28 },
+  thumbs: { flexDirection: 'row', gap: 12, marginTop: 20 },
+  thumbBox: { alignItems: 'center' },
+  thumb: { width: 110, height: 110, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.border },
+  thumbLabel: { fontFamily: fonts.bold, fontSize: 12, color: colors.textDim, marginTop: 6 },
+  thumbDel: { position: 'absolute', top: -6, insetInlineEnd: -6, backgroundColor: colors.ember, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  thumbDelTxt: { color: '#fff', fontFamily: fonts.bold, fontSize: 12 },
+
+  actions: { marginTop: 24 },
+  pickRow: { flexDirection: 'row', gap: 12 },
+  pickBtn: { flex: 1 },
   loading: { alignItems: 'center', marginTop: 30 },
   loadingTxt: { fontFamily: fonts.bold, color: colors.textDim, fontSize: 15, marginTop: 14 },
-  preview: { width: '100%', height: 200, borderRadius: radius.lg, marginBottom: 16, borderWidth: 1.5, borderColor: colors.border },
+  preview: { width: '100%', height: 180, borderRadius: radius.lg, marginBottom: 16, borderWidth: 1.5, borderColor: colors.border },
 
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 },
   totalLabel: { fontFamily: fonts.display, fontSize: 18, color: colors.text },
@@ -208,7 +250,9 @@ const styles = StyleSheet.create({
 
   item: { marginBottom: 10 },
   itemPad: { flexDirection: 'row', alignItems: 'center', padding: 14, paddingStart: 18, gap: 10 },
-  itemName: { fontFamily: fonts.bold, fontSize: 15, color: colors.text },
+  itemNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  itemName: { fontFamily: fonts.bold, fontSize: 15, color: colors.text, flexShrink: 1 },
+  srcTag: { fontFamily: fonts.extrabold, fontSize: 9, paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, overflow: 'hidden', includeFontPadding: false },
   itemMacro: { marginTop: 3, fontSize: 13 },
   itemUnit: { fontFamily: fonts.medium, fontSize: 11, color: colors.textDim },
   gramsWrap: { alignItems: 'center' },
