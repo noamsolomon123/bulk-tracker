@@ -3,10 +3,10 @@ import { Platform } from 'react-native';
 
 // Default meal reminder times (24h). Each fires daily when enabled.
 export const DEFAULT_REMINDER_TIMES = [
-  { hour: 8, minute: 0, label: 'ארוחת בוקר' },
-  { hour: 12, minute: 30, label: 'ארוחת צהריים' },
-  { hour: 16, minute: 0, label: 'חטיף' },
-  { hour: 20, minute: 0, label: 'ארוחת ערב' },
+  { id: 'breakfast', hour: 8, minute: 0, label: 'ארוחת בוקר', enabled: true },
+  { id: 'lunch', hour: 12, minute: 30, label: 'ארוחת צהריים', enabled: true },
+  { id: 'snack', hour: 16, minute: 0, label: 'חטיף', enabled: true },
+  { id: 'dinner', hour: 20, minute: 0, label: 'ארוחת ערב', enabled: true },
 ];
 
 // Foreground display behaviour.
@@ -51,6 +51,7 @@ export async function scheduleMealReminders(times = DEFAULT_REMINDER_TIMES) {
   await ensureAndroidChannel();
   await cancelMealReminders();
   for (const t of times) {
+    if (t.enabled === false) continue;
     await Notifications.scheduleNotificationAsync({
       content: {
         title: `הגיע הזמן לאכול — ${t.label} 🍽️`,

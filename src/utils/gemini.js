@@ -73,3 +73,29 @@ export async function lookupFoodNutrition(query, apiKey) {
     protein,
   };
 }
+
+// Lightweight key check. Resolves true if the key works, else throws
+// (NO_KEY | BAD_KEY | RATE_LIMIT | NETWORK | HTTP_xxx).
+export async function testGeminiKey(apiKey) {
+  if (!apiKey || !apiKey.trim()) throw new Error('NO_KEY');
+  const body = {
+    contents: [{ role: 'user', parts: [{ text: 'ping' }] }],
+    generationConfig: { maxOutputTokens: 1, temperature: 0 },
+  };
+  let res;
+  try {
+    res = await fetch(ENDPOINT(apiKey), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    throw new Error('NETWORK');
+  }
+  if (!res.ok) {
+    if (res.status === 400 || res.status === 401 || res.status === 403) throw new Error('BAD_KEY');
+    if (res.status === 429) throw new Error('RATE_LIMIT');
+    throw new Error('HTTP_' + res.status);
+  }
+  return true;
+}

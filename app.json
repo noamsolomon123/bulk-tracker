@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#0f1115",
+    "backgroundColor": "#14110C",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bulktracker.app"
@@ -14,7 +14,7 @@
     "android": {
       "package": "com.bulktracker.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0f1115",
+        "backgroundColor": "#14110C",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -41,7 +41,8 @@
         {
           "cameraPermission": "האפליקציה משתמשת במצלמה כדי לסרוק ברקודים של מוצרי מזון."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ]
   }
 }

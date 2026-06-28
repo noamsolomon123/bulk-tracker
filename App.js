@@ -23,7 +23,15 @@ import CreateFoodScreen from './src/screens/CreateFoodScreen';
 import ScanBarcodeScreen from './src/screens/ScanBarcodeScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import StatsScreen from './src/screens/StatsScreen';
+import DayDetailScreen from './src/screens/DayDetailScreen';
 import { colors, fonts } from './src/theme';
+
+function dayTitle(key) {
+  if (!key) return 'פירוט יום';
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+}
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -53,7 +61,20 @@ function HomeStack() {
   );
 }
 
-const TAB_ICONS = { Home: '🔥', Profile: '💪', Settings: '⚙️' };
+function StatsStack() {
+  return (
+    <Stack.Navigator screenOptions={headerOptions}>
+      <Stack.Screen name="StatsMain" component={StatsScreen} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="DayDetail"
+        component={DayDetailScreen}
+        options={({ route }) => ({ title: dayTitle(route.params?.dateKey) })}
+      />
+    </Stack.Navigator>
+  );
+}
+
+const TAB_ICONS = { Home: '🔥', Stats: '📊', Profile: '💪', Settings: '⚙️' };
 
 function IronTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
@@ -116,6 +137,7 @@ export default function App() {
         <NavigationContainer theme={navTheme}>
           <Tab.Navigator screenOptions={{ headerShown: false }} tabBar={(props) => <IronTabBar {...props} />}>
             <Tab.Screen name="Home" component={HomeStack} options={{ title: 'היום' }} />
+            <Tab.Screen name="Stats" component={StatsStack} options={{ title: 'נתונים' }} />
             <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'פרופיל' }} />
             <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: 'הגדרות' }} />
           </Tab.Navigator>

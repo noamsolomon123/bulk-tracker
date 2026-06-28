@@ -51,7 +51,16 @@ export function AppProvider({ children }) {
       setProfile({ ...DEFAULT_PROFILE, ...p });
       setCustomFoods(cf);
       setLog(lg);
-      setSettings({ ...DEFAULT_SETTINGS, ...st });
+      // Normalize reminder times to the {id,label,hour,minute,enabled} shape.
+      const rawTimes = (st && st.reminderTimes) || DEFAULT_REMINDER_TIMES;
+      const reminderTimes = rawTimes.map((t, i) => ({
+        id: t.id || `r${i}-${t.hour}-${t.minute}`,
+        label: t.label || 'תזכורת',
+        hour: t.hour,
+        minute: t.minute,
+        enabled: t.enabled !== false,
+      }));
+      setSettings({ ...DEFAULT_SETTINGS, ...st, reminderTimes });
       setHydrated(true);
     })();
   }, []);
@@ -130,6 +139,92 @@ export function AppProvider({ children }) {
     [log]
   );
 
+  // ── Stats aggregation ───────────────────────────────────────────────
+  const stats = useMemo(() => {
+    const byDay = {};
+    for (const e of log) {
+      if (!byDay[e.date]) byDay[e.date] = { calories: 0, protein: 0, count: 0 };
+      byDay[e.date].calories += e.calories;
+      byDay[e.date].protein += e.protein;
+      byDay[e.date].count += 1;
+    }
+    const days = Object.keys(byDay).sort();
+    const totalCalories = Math.round(log.reduce((s, e) => s + e.calories, 0));
+    const totalProtein = Math.round(log.reduce((s, e) => s + e.protein, 0) * 10) / 10;
+    const daysTracked = days.length;
+    const avgCalories = daysTracked ? Math.round(totalCalories / daysTracked) : 0;
+    const avgProtein = daysTracked ? Math.round((totalProtein / daysTracked) * 10) / 10 : 0;
+    const goalCal = goals.calories || 0;
+    const daysOnTarget = days.filter((d) => byDay[d].calories >= goalCal).length;
+    let bestProtein = 0;
+    for (const d of days) bestProtein = Math.max(bestProtein, byDay[d].protein);
+    // current streak: consecutive logged days counting back from today (or yesterday)
+    let streak = 0;
+    const cur = new Date();
+    if (!byDay[todayKey(cur)]) cur.setDate(cur.getDate() - 1);
+    while (byDay[todayKey(cur)]) {
+      streak += 1;
+      cur.setDate(cur.getDate() - 1);
+    }
+    return {
+      byDay, days, totalCalories, totalProtein, daysTracked, avgCalories, avgProtein,
+      daysOnTarget, bestProtein: Math.round(bestProtein), streak, startDate: days[0] || null,
+    };
+  }, [log, goals.calories]);
+
+  const getRecentDays = useCallback(
+    (n = 14) => {
+      const out = [];
+      const today = new Date();
+      for (let i = n - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const key = todayKey(d);
+        const day = stats.byDay[key] || { calories: 0, protein: 0, count: 0 };
+        out.push({ key, date: d, calories: day.calories, protein: day.protein, count: day.count });
+      }
+      return out;
+    },
+    [stats]
+  );
+
+  // ── Reminder management ─────────────────────────────────────────────
+  const sortByTime = (arr) =>
+    [...arr].sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute));
+
+  const setReminderTimes = useCallback((updater) => {
+    setSettings((prev) => {
+      const next = typeof updater === 'function' ? updater(prev.reminderTimes) : updater;
+      const reminderTimes = sortByTime(next);
+      if (prev.remindersEnabled) scheduleMealReminders(reminderTimes);
+      return { ...prev, reminderTimes };
+    });
+  }, []);
+
+  const addReminder = useCallback(
+    (r) =>
+      setReminderTimes((prev) => [
+        ...prev,
+        { id: makeId('rem'), label: r.label || 'תזכורת', hour: r.hour, minute: r.minute, enabled: true },
+      ]),
+    [setReminderTimes]
+  );
+  const updateReminder = useCallback(
+    (id, patch) => setReminderTimes((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t))),
+    [setReminderTimes]
+  );
+  const deleteReminder = useCallback(
+    (id) => setReminderTimes((prev) => prev.filter((t) => t.id !== id)),
+    [setReminderTimes]
+  );
+  // Label-only edit: no need to reschedule on every keystroke.
+  const renameReminder = useCallback((id, label) => {
+    setSettings((prev) => ({
+      ...prev,
+      reminderTimes: prev.reminderTimes.map((t) => (t.id === id ? { ...t, label } : t)),
+    }));
+  }, []);
+
   const setRemindersEnabled = useCallback(
     async (enabled) => {
       if (enabled) {
@@ -164,7 +259,13 @@ export function AppProvider({ children }) {
     addLogEntry,
     deleteLogEntry,
     getDay,
+    stats,
+    getRecentDays,
     setRemindersEnabled,
+    addReminder,
+    updateReminder,
+    deleteReminder,
+    renameReminder,
     setGeminiKey,
   };
 
