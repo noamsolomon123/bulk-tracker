@@ -20,6 +20,7 @@ import { AppProvider } from './src/context/AppContext';
 import HomeScreen from './src/screens/HomeScreen';
 import AddFoodScreen from './src/screens/AddFoodScreen';
 import CreateFoodScreen from './src/screens/CreateFoodScreen';
+import ScanBarcodeScreen from './src/screens/ScanBarcodeScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { colors, fonts } from './src/theme';
@@ -47,6 +48,7 @@ function HomeStack() {
       <Stack.Screen name="HomeMain" component={HomeScreen} options={{ headerShown: false }} />
       <Stack.Screen name="AddFood" component={AddFoodScreen} options={{ title: 'הוספת מזון' }} />
       <Stack.Screen name="CreateFood" component={CreateFoodScreen} options={{ title: 'מזון שלי חדש' }} />
+      <Stack.Screen name="ScanBarcode" component={ScanBarcodeScreen} options={{ title: 'סריקת ברקוד' }} />
     </Stack.Navigator>
   );
 }

@@ -89,6 +89,9 @@ export default function AddFoodScreen({ navigation }) {
           value={query}
           onChangeText={setQuery}
         />
+        <Pressable style={styles.scanBtn} onPress={() => navigation.navigate('ScanBarcode')}>
+          <Text style={styles.scanBtnText}>📷</Text>
+        </Pressable>
         <Pressable style={styles.newBtn} onPress={() => navigation.navigate('CreateFood')}>
           <Text style={styles.newBtnText}>＋ חדש</Text>
         </Pressable>
@@ -185,6 +188,11 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: colors.volt, backgroundColor: colors.voltGlow,
   },
   newBtnText: { fontFamily: fonts.extrabold, color: colors.volt, fontSize: 14 },
+  scanBtn: {
+    borderRadius: radius.md, paddingHorizontal: 14, justifyContent: 'center',
+    borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.cardAlt,
+  },
+  scanBtnText: { fontSize: 18 },
 
   catBar: { paddingBottom: 6 },
   catContent: { paddingHorizontal: 18, gap: 8 },

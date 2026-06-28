@@ -35,7 +35,13 @@
           "color": "#4f8cff"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "האפליקציה משתמשת במצלמה כדי לסרוק ברקודים של מוצרי מזון."
+        }
+      ]
     ]
   }
 }
