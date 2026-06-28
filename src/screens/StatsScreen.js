@@ -122,9 +122,9 @@ const styles = StyleSheet.create({
   heroNum: { fontFamily: fonts.display, fontSize: 46, color: colors.amber, lineHeight: 50 },
   heroSub: { fontFamily: fonts.medium, fontSize: 13, color: colors.textDim, marginTop: 4 },
 
-  statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 },
+  statGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10, marginTop: 6 },
   statBox: {
-    width: `${(100 - 4) / 3}%`, backgroundColor: colors.card, borderRadius: radius.md, borderWidth: 1.5,
+    width: '32%', backgroundColor: colors.card, borderRadius: radius.md, borderWidth: 1.5,
     borderColor: colors.border, paddingVertical: 14, paddingHorizontal: 8, alignItems: 'center',
   },
   statValue: { fontFamily: fonts.display, fontSize: 24, color: colors.text },

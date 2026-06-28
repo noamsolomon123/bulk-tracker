@@ -22,9 +22,9 @@ export default function Calendar({ year, month, byDay, goalCal = 0, todayKey, on
   return (
     <View>
       <View style={styles.header}>
-        <Pressable onPress={onNext} hitSlop={10} style={styles.nav}><Text style={styles.navTxt}>‹</Text></Pressable>
-        <Text style={styles.title}>{MONTHS[month]} {year}</Text>
         <Pressable onPress={onPrev} hitSlop={10} style={styles.nav}><Text style={styles.navTxt}>›</Text></Pressable>
+        <Text style={styles.title}>{MONTHS[month]} {year}</Text>
+        <Pressable onPress={onNext} hitSlop={10} style={styles.nav}><Text style={styles.navTxt}>‹</Text></Pressable>
       </View>
 
       <View style={styles.weekRow}>
