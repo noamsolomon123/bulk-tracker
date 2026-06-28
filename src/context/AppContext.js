@@ -12,7 +12,10 @@ import {
 const DEFAULT_SETTINGS = {
   remindersEnabled: false,
   reminderTimes: DEFAULT_REMINDER_TIMES,
+  geminiKey: '', // user-pasted Gemini API key (stored locally only)
 };
+
+export const MY_FOODS_CAT = 'המזונות שלי';
 
 const AppContext = createContext(null);
 
@@ -82,6 +85,7 @@ export function AppProvider({ children }) {
     const entry = {
       id: makeId('food'),
       custom: true,
+      cat: MY_FOODS_CAT,
       name: food.name.trim(),
       servingLabel: food.servingLabel?.trim() || 'מנה',
       calories: Number(food.calories) || 0,
@@ -143,6 +147,10 @@ export function AppProvider({ children }) {
     [settings.reminderTimes]
   );
 
+  const setGeminiKey = useCallback((key) => {
+    setSettings((prev) => ({ ...prev, geminiKey: (key || '').trim() }));
+  }, []);
+
   const value = {
     hydrated,
     profile,
@@ -157,6 +165,7 @@ export function AppProvider({ children }) {
     deleteLogEntry,
     getDay,
     setRemindersEnabled,
+    setGeminiKey,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

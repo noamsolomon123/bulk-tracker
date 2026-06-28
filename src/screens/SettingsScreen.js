@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, Switch, ScrollView, Alert, TextInput, Pressable, Linking } from 'react-native';
 import Screen from '../components/Screen';
 import Card from '../components/Card';
 import { useApp } from '../context/AppContext';
@@ -7,8 +7,10 @@ import { formatTime } from '../utils/notifications';
 import { colors, fonts, radius } from '../theme';
 
 export default function SettingsScreen() {
-  const { settings, setRemindersEnabled } = useApp();
+  const { settings, setRemindersEnabled, setGeminiKey } = useApp();
   const [busy, setBusy] = useState(false);
+  const [showKey, setShowKey] = useState(false);
+  const hasKey = !!(settings.geminiKey && settings.geminiKey.trim());
 
   const onToggle = async (value) => {
     setBusy(true);
@@ -58,6 +60,38 @@ export default function SettingsScreen() {
           {settings.remindersEnabled ? 'התזכורות פעילות וחוזרות מדי יום.' : 'הפעל את תזכורות הארוחה למעלה כדי להפעיל את הלוח.'}
         </Text>
 
+        <View style={styles.sectionRow}>
+          <Text style={styles.section}>חיפוש מזון עם AI</Text>
+          <View style={[styles.statusPill, { backgroundColor: hasKey ? colors.volt : colors.surface3 }]}>
+            <Text style={[styles.statusText, { color: hasKey ? colors.ink : colors.textDim }]}>
+              {hasKey ? 'פעיל ✓' : 'לא הוגדר'}
+            </Text>
+          </View>
+        </View>
+        <Card>
+          <Text style={styles.rowSub}>
+            הדבק מפתח Gemini API כדי לחפש כל מזון שלא נמצא ברשימה — ה‑AI יחזיר קלוריות וחלבון. המפתח נשמר רק במכשיר שלך.
+          </Text>
+          <View style={styles.keyRow}>
+            <TextInput
+              style={styles.keyInput}
+              placeholder="מפתח Gemini API"
+              placeholderTextColor={colors.textFaint}
+              value={settings.geminiKey}
+              onChangeText={setGeminiKey}
+              secureTextEntry={!showKey}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Pressable style={styles.keyToggle} onPress={() => setShowKey((s) => !s)}>
+              <Text style={styles.keyToggleText}>{showKey ? 'הסתר' : 'הצג'}</Text>
+            </Pressable>
+          </View>
+          <Pressable onPress={() => Linking.openURL('https://aistudio.google.com/apikey')}>
+            <Text style={styles.link}>קבל מפתח חינמי ב‑Google AI Studio ↗</Text>
+          </Pressable>
+        </Card>
+
         <Card style={styles.privacyCard} accent={colors.volt} padded={false}>
           <View style={styles.privacyPad}>
             <Text style={styles.privacyTitle}>🔒 פרטיות מלאה</Text>
@@ -88,6 +122,18 @@ const styles = StyleSheet.create({
   timeLabel: { fontFamily: fonts.medium, color: colors.text, fontSize: 15 },
   timeValue: { fontFamily: fonts.extrabold, color: colors.volt, fontSize: 16, letterSpacing: 0.5 },
   scheduleNote: { fontFamily: fonts.regular, color: colors.textFaint, fontSize: 12, marginTop: 10 },
+
+  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 26, marginBottom: 12 },
+  statusPill: { borderRadius: radius.pill, paddingHorizontal: 11, paddingVertical: 4 },
+  statusText: { fontFamily: fonts.extrabold, fontSize: 12 },
+  keyRow: { flexDirection: 'row', gap: 8, marginTop: 14 },
+  keyInput: {
+    flex: 1, backgroundColor: colors.bg, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 12,
+    color: colors.text, fontFamily: fonts.medium, fontSize: 15, borderWidth: 1.5, borderColor: colors.border,
+  },
+  keyToggle: { justifyContent: 'center', paddingHorizontal: 14, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.cardAlt },
+  keyToggleText: { fontFamily: fonts.bold, color: colors.textDim, fontSize: 13 },
+  link: { fontFamily: fonts.bold, color: colors.volt, fontSize: 13, marginTop: 14 },
 
   privacyCard: { marginTop: 26 },
   privacyPad: { padding: 18, paddingStart: 22 },
