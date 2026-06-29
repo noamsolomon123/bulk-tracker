@@ -115,7 +115,7 @@ export default function ScanBarcodeScreen({ navigation }) {
               <Text style={styles.bigEmoji}>🔍</Text>
               <Text style={styles.title}>{ERRORS[result.error] || 'שגיאה בחיפוש.'}</Text>
               <Text style={styles.code}>קוד: {result.code}</Text>
-              <Button label="הוסף ידנית" icon="✎" tone="amber" onPress={() => navigation.replace('CreateFood')} style={{ marginTop: 18 }} />
+              <Button label="הוסף ידנית" icon="✎" tone="amber" onPress={() => navigation.replace('CreateFood', { code: result.code })} style={{ marginTop: 18 }} />
               <Pressable onPress={rescan} style={styles.linkBtn}><Text style={styles.link}>סרוק שוב</Text></Pressable>
             </Card>
           )}

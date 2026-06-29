@@ -1,4 +1,17 @@
-import TABLE from '../data/nutrition100g.json';
+// Lazy-load the ~per-100g table so Metro doesn't parse/retain it at app boot
+// (the photo-grounding path is the only consumer).
+let _table;
+function table() {
+  if (!_table) _table = require('../data/nutrition100g.json');
+  return _table;
+}
+
+// Keys longest-first so the most specific match wins (built once, lazily).
+let _keys;
+function keys() {
+  if (!_keys) _keys = Object.keys(table()).sort((a, b) => b.length - a.length);
+  return _keys;
+}
 
 // Must match the normalization used to build the table.
 function normalize(s) {
@@ -9,23 +22,35 @@ function normalize(s) {
     .toLowerCase();
 }
 
-// Keys longest-first so the most specific match wins.
-const KEYS = Object.keys(TABLE).sort((a, b) => b.length - a.length);
+// Split a free-text item name into normalized whole-word tokens.
+function tokenize(s) {
+  return String(s || '')
+    .split(/[\s,./()\-־–—]+/)
+    .map(normalize)
+    .filter((t) => t.length >= 2);
+}
 
 // Look up per-100g nutrition for a Hebrew food name and scale to grams.
 // Returns { calories, protein, matchedName } or null if no confident match.
 export function groundItem(name, grams) {
   const n = normalize(name);
   if (n.length < 2 || !(grams > 0)) return null;
+  const TABLE = table();
 
   let entry = TABLE[n] ? n : null;
   if (!entry) {
-    // Longest table key that appears inside the (more specific) item name.
-    for (const key of KEYS) {
-      if (key.length < 3) break;
-      if (n.includes(key)) {
-        entry = key;
-        break;
+    // Whole-token match only: a table key must equal one of the item's tokens,
+    // so a short generic key (e.g. חלב) can't be grounded to a longer word
+    // it merely appears inside (e.g. חלבון). Exact match above handles
+    // multi-word names; here we keep the longest confident single-token key.
+    const tokens = tokenize(name);
+    if (tokens.length) {
+      for (const key of keys()) {
+        if (key.length < 3) break;
+        if (tokens.includes(key)) {
+          entry = key;
+          break;
+        }
       }
     }
   }

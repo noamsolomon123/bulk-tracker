@@ -23,6 +23,7 @@ let uid = 0;
 
 export default function PhotoAnalyzeScreen({ navigation }) {
   const { settings, addLogEntry } = useApp();
+  const hasKey = !!(settings.geminiKey && settings.geminiKey.trim());
   const [reference, setReference] = useState('none');
   const [phase, setPhase] = useState('pick'); // pick | loading | result
   const [photos, setPhotos] = useState([]); // { uri, base64, mimeType }
@@ -65,17 +66,23 @@ export default function PhotoAnalyzeScreen({ navigation }) {
         reference,
       });
       setItems(
-        r.items.map((it) => ({
-          id: `ph-${uid++}`,
-          name: it.name,
-          source: it.source,
-          gramsStr: String(it.grams),
-          calories: it.calories,
-          protein: it.protein,
-          _g0: it.grams || 1,
-          _c0: it.calories,
-          _p0: it.protein,
-        }))
+        r.items.map((it) => {
+          // No usable gram baseline from the AI — record but don't scale, and
+          // require the user to enter grams before it can be logged.
+          const synthetic = !(it.grams > 0);
+          return {
+            id: `ph-${uid++}`,
+            name: it.name,
+            source: it.source,
+            gramsStr: synthetic ? '' : String(it.grams),
+            calories: it.calories,
+            protein: it.protein,
+            _g0: it.grams,
+            _c0: it.calories,
+            _p0: it.protein,
+            _synthetic: synthetic,
+          };
+        })
       );
       setAssumptions(r.assumptions);
       setPhase('result');
@@ -86,21 +93,29 @@ export default function PhotoAnalyzeScreen({ navigation }) {
   };
 
   const setGrams = (id, text) => {
-    const g = parseFloat(text.replace(',', '.'));
     setItems((prev) =>
       prev.map((it) => {
         if (it.id !== id) return it;
-        const ratio = !isNaN(g) && it._g0 > 0 ? g / it._g0 : 0;
+        // No reliable baseline to scale from: keep the typed grams, leave macros.
+        if (it._synthetic || !(it._g0 > 0)) return { ...it, gramsStr: text };
+        const g = parseFloat(text.replace(',', '.'));
+        const ratio = !isNaN(g) && g >= 0 ? g / it._g0 : 0;
         return { ...it, gramsStr: text, calories: Math.round(it._c0 * ratio), protein: Math.round(it._p0 * ratio * 10) / 10 };
       })
     );
   };
 
   const removeItem = (id) => setItems((prev) => prev.filter((it) => it.id !== id));
-  const total = items.reduce((a, it) => ({ cal: a.cal + it.calories, pro: a.pro + it.protein }), { cal: 0, pro: 0 });
+  // Only items with a positive gram amount can be logged (no 0‑gram junk).
+  const addable = items.filter((it) => Math.round(parseFloat(it.gramsStr) || 0) > 0);
+  const total = addable.reduce((a, it) => ({ cal: a.cal + it.calories, pro: a.pro + it.protein }), { cal: 0, pro: 0 });
 
   const addAll = () => {
-    items.forEach((it) => {
+    if (!addable.length) {
+      Alert.alert('אין פריטים תקינים', 'הזן כמות גרמים גדולה מ‑0 לפחות לפריט אחד.');
+      return;
+    }
+    addable.forEach((it) => {
       const grams = Math.round(parseFloat(it.gramsStr) || 0);
       addLogEntry({ id: it.id, name: it.name, servingLabel: `${grams} גרם`, calories: it.calories, protein: it.protein }, 1);
     });
@@ -114,6 +129,21 @@ export default function PhotoAnalyzeScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {phase !== 'result' ? (
           <>
+            {!hasKey ? (
+              <Card accent={colors.amber} style={styles.keyBanner}>
+                <Text style={styles.keyBannerTitle}>דרוש מפתח Gemini</Text>
+                <Text style={styles.keyBannerText}>ניתוח צלחת עם AI מחייב מפתח Gemini חינמי. הגדר אותו פעם אחת כדי להתחיל.</Text>
+                <Pressable
+                  style={styles.keyBannerBtn}
+                  onPress={() => navigation.getParent()?.navigate('Settings')}
+                  accessibilityRole="button"
+                  accessibilityLabel="פתח הגדרות"
+                >
+                  <Text style={styles.keyBannerBtnTxt}>פתח הגדרות ↗</Text>
+                </Pressable>
+              </Card>
+            ) : null}
+
             <Text style={styles.lead}>
               לדיוק מרבי צלם <Text style={{ color: colors.volt, fontFamily: fonts.bold }}>שתי תמונות</Text> של אותה צלחת: אחת מלמעלה ואחת בזווית ~45° (כדי לראות גובה). תמונה אחת גם עובדת.
             </Text>
@@ -141,7 +171,7 @@ export default function PhotoAnalyzeScreen({ navigation }) {
                   <View key={i} style={styles.thumbBox}>
                     <Image source={{ uri: p.uri }} style={styles.thumb} />
                     <Text style={styles.thumbLabel}>{SLOT_LABELS[i] || `תמונה ${i + 1}`}</Text>
-                    <Pressable style={styles.thumbDel} onPress={() => removePhoto(i)} hitSlop={6}><Text style={styles.thumbDelTxt}>✕</Text></Pressable>
+                    <Pressable style={styles.thumbDel} onPress={() => removePhoto(i)} hitSlop={6} accessibilityRole="button" accessibilityLabel="הסר תמונה"><Text style={styles.thumbDelTxt}>✕</Text></Pressable>
                   </View>
                 ))}
               </View>
@@ -201,14 +231,14 @@ export default function PhotoAnalyzeScreen({ navigation }) {
                     <TextInput style={styles.grams} keyboardType="numeric" value={it.gramsStr} onChangeText={(t) => setGrams(it.id, t)} selectTextOnFocus />
                     <Text style={styles.gramsUnit}>גרם</Text>
                   </View>
-                  <Pressable onPress={() => removeItem(it.id)} hitSlop={8} style={styles.del}><Text style={styles.delTxt}>✕</Text></Pressable>
+                  <Pressable onPress={() => removeItem(it.id)} hitSlop={8} style={styles.del} accessibilityRole="button" accessibilityLabel={`הסר ${it.name}`}><Text style={styles.delTxt}>✕</Text></Pressable>
                 </View>
               </Card>
             ))}
 
             {assumptions ? <Text style={styles.assume}>📝 {assumptions}</Text> : null}
 
-            <Button label={`הוסף ${items.length} פריטים ליומן`} icon="＋" onPress={addAll} style={{ marginTop: 16 }} />
+            <Button label={`הוסף ${addable.length} פריטים ליומן`} icon="＋" onPress={addAll} style={{ marginTop: 16 }} />
             <Pressable onPress={reset} style={styles.again}><Text style={styles.againTxt}>נתח צלחת אחרת</Text></Pressable>
           </>
         )}
@@ -219,6 +249,11 @@ export default function PhotoAnalyzeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   content: { padding: 18, paddingBottom: 40 },
+  keyBanner: { padding: 16, paddingStart: 20, marginBottom: 20 },
+  keyBannerTitle: { fontFamily: fonts.bold, fontSize: 15, color: colors.text, marginBottom: 4 },
+  keyBannerText: { fontFamily: fonts.regular, fontSize: 13, color: colors.textDim, lineHeight: 19 },
+  keyBannerBtn: { alignSelf: 'flex-start', marginTop: 10, borderRadius: radius.sm, borderWidth: 1.5, borderColor: colors.amber, paddingHorizontal: 14, paddingVertical: 8 },
+  keyBannerBtnTxt: { fontFamily: fonts.extrabold, fontSize: 13, color: colors.amber },
   lead: { fontFamily: fonts.regular, fontSize: 15, color: colors.text, lineHeight: 23, marginBottom: 22 },
   label: { fontFamily: fonts.bold, color: colors.textDim, fontSize: 12, letterSpacing: 1, marginBottom: 10 },
   refRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

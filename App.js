@@ -91,7 +91,14 @@ function IronTabBar({ state, descriptors, navigation }) {
           if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
         };
         return (
-          <Pressable key={route.key} onPress={onPress} style={tab.item}>
+          <Pressable
+            key={route.key}
+            onPress={onPress}
+            style={tab.item}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: focused }}
+            accessibilityLabel={label}
+          >
             <View style={[tab.indicator, focused && tab.indicatorOn]} />
             <Text style={[tab.icon, { opacity: focused ? 1 : 0.45 }]}>{TAB_ICONS[route.name]}</Text>
             <Text style={[tab.label, focused ? tab.labelOn : tab.labelOff]}>{label}</Text>

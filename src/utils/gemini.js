@@ -4,8 +4,9 @@
 import { GEMINI_TEXT_MODEL, TEXT_THINKING } from './aiModels';
 
 const MODEL = GEMINI_TEXT_MODEL;
-const ENDPOINT = (key) =>
-  `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(key)}`;
+// The key travels in the x-goog-api-key header (not the query string) so it is
+// not captured by network inspectors, proxies, or request logs.
+const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 const PROMPT = (query) =>
   `אתה מסד נתונים תזונתי מדויק. עבור המזון: "${query}", החזר ערכים תזונתיים מקובלים (לפי USDA / נתונים סטנדרטיים) למנה אחת רגילה שאדם באמת אוכל.
@@ -43,9 +44,9 @@ export async function lookupFoodNutrition(query, apiKey) {
 
   let res;
   try {
-    res = await fetch(ENDPOINT(apiKey), {
+    res = await fetch(ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify(body),
     });
   } catch (e) {
@@ -58,7 +59,12 @@ export async function lookupFoodNutrition(query, apiKey) {
     throw new Error('HTTP_' + res.status);
   }
 
-  const data = await res.json();
+  let data;
+  try {
+    data = await res.json();
+  } catch (e) {
+    throw new Error('EMPTY');
+  }
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error('EMPTY');
 
@@ -74,8 +80,8 @@ export async function lookupFoodNutrition(query, apiKey) {
   if (!calories && !protein) throw new Error('EMPTY');
 
   return {
-    name: String(parsed.name || query).trim(),
-    servingLabel: String(parsed.servingLabel || 'מנה').trim(),
+    name: String(parsed.name || query).trim().slice(0, 80),
+    servingLabel: String(parsed.servingLabel || 'מנה').trim().slice(0, 80),
     calories,
     protein,
   };
@@ -91,9 +97,9 @@ export async function testGeminiKey(apiKey) {
   };
   let res;
   try {
-    res = await fetch(ENDPOINT(apiKey), {
+    res = await fetch(ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify(body),
     });
   } catch (e) {

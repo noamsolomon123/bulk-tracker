@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import Screen from '../components/Screen';
 import Card from '../components/Card';
 import { useApp } from '../context/AppContext';
@@ -39,12 +39,25 @@ function Chips({ options, valueKey, selected, onSelect }) {
   );
 }
 
+// Sane upper bounds so a stray entry can't poison the goal math.
+const MAX = { heightCm: 260, weightKg: 400, age: 120 };
+
 export default function ProfileScreen() {
-  const { profile, goals, updateProfile } = useApp();
+  const { profile, goals, updateProfile, hydrated } = useApp();
 
   const num = (key) => (text) => {
+    // Keep digits + dot, then collapse any extra dots into a single decimal.
     const cleaned = text.replace(/[^0-9.]/g, '');
-    updateProfile({ [key]: cleaned === '' ? '' : Number(cleaned) });
+    const parts = cleaned.split('.');
+    const normalized = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleaned;
+    if (normalized === '') {
+      updateProfile({ [key]: '' });
+      return;
+    }
+    const nval = Number(normalized);
+    const max = MAX[key];
+    const safe = Number.isFinite(nval) ? (max ? Math.min(nval, max) : nval) : '';
+    updateProfile({ [key]: safe });
   };
 
   return (
@@ -54,22 +67,28 @@ export default function ProfileScreen() {
           <Text style={styles.overline}>פרופיל · יעדי מסה</Text>
           <Text style={styles.title}>פרופיל ויעדים</Text>
 
-          <Card style={styles.goalCard} padded={false}>
-            <Text style={styles.goalHeading}>היעדים היומיים שלך · עלייה במסה</Text>
-            <View style={styles.goalRow}>
-              <View style={[styles.goalBox, { borderColor: colors.amber }]}>
-                <Text style={[styles.goalNum, { color: colors.amber }]}>{goals.calories}</Text>
-                <Text style={styles.goalUnit}>קק״ל ביום</Text>
+          {hydrated ? (
+            <Card style={styles.goalCard} padded={false}>
+              <Text style={styles.goalHeading}>היעדים היומיים שלך · עלייה במסה</Text>
+              <View style={styles.goalRow}>
+                <View style={[styles.goalBox, { borderColor: colors.amber }]}>
+                  <Text style={[styles.goalNum, { color: colors.amber }]}>{goals.calories}</Text>
+                  <Text style={styles.goalUnit}>קק״ל ביום</Text>
+                </View>
+                <View style={[styles.goalBox, { borderColor: colors.volt }]}>
+                  <Text style={[styles.goalNum, { color: colors.volt }]}>{goals.protein}</Text>
+                  <Text style={styles.goalUnit}>גרם חלבון</Text>
+                </View>
               </View>
-              <View style={[styles.goalBox, { borderColor: colors.volt }]}>
-                <Text style={[styles.goalNum, { color: colors.volt }]}>{goals.protein}</Text>
-                <Text style={styles.goalUnit}>גרם חלבון</Text>
-              </View>
-            </View>
-            <Text style={styles.goalNote}>
-              מטבוליזם בסיסי {goals.bmr} · אחזקה {goals.tdee} קק״ל · מחושב אוטומטית לעודף קלורי
-            </Text>
-          </Card>
+              <Text style={styles.goalNote}>
+                מטבוליזם בסיסי {goals.bmr} · אחזקה {goals.tdee} קק״ל · מחושב אוטומטית לעודף קלורי
+              </Text>
+            </Card>
+          ) : (
+            <Card style={[styles.goalCard, styles.goalPlaceholder]}>
+              <ActivityIndicator color={colors.volt} />
+            </Card>
+          )}
 
           <Text style={styles.section}>נתונים</Text>
           <View style={styles.rowFields}>
@@ -105,6 +124,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.display, fontSize: 30, color: colors.text, marginBottom: 18 },
 
   goalCard: { padding: 18, marginBottom: 8 },
+  goalPlaceholder: { minHeight: 168, alignItems: 'center', justifyContent: 'center' },
   goalHeading: { fontFamily: fonts.bold, fontSize: 12, letterSpacing: 1, color: colors.textDim, marginBottom: 14 },
   goalRow: { flexDirection: 'row', gap: 12 },
   goalBox: {

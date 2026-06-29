@@ -1,7 +1,8 @@
 // Barcode -> nutrition via the free Open Food Facts API (no key required).
 // OFF asks for a descriptive User-Agent.
 
-const UA = 'BulkTracker/1.0 (Expo; contact: segev.solomon@payme.io)';
+// Open Food Facts asks for an identifiable (not necessarily personal) contact.
+const UA = 'BulkTracker/1.0 (Expo; contact: com.bulktracker.app)';
 
 const num = (v) => {
   const n = Number(v);

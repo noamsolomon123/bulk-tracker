@@ -21,7 +21,9 @@ export async function loadJSON(key, fallback) {
 export async function saveJSON(key, value) {
   try {
     await AsyncStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch (e) {
     console.warn(`Failed to save ${key}`, e);
+    return false;
   }
 }

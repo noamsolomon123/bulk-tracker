@@ -17,7 +17,7 @@ const AI_ERRORS = {
 };
 
 export default function AddFoodScreen({ navigation }) {
-  const { allFoods, addLogEntry, addCustomFood, deleteCustomFood, settings } = useApp();
+  const { allFoods, addLogEntry, addCustomFood, deleteCustomFood, settings, hydrated } = useApp();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [cat, setCat] = useState('הכל');
@@ -47,7 +47,14 @@ export default function AddFoodScreen({ navigation }) {
       setSelected({ ...r, id: 'ai-' + Date.now(), __ai: true });
       setQty('1');
     } catch (e) {
-      Alert.alert('חיפוש AI', AI_ERRORS[e.message] || 'שגיאת AI. נסה שוב.');
+      if (e.message === 'NO_KEY') {
+        Alert.alert('חיפוש AI', AI_ERRORS.NO_KEY, [
+          { text: 'ביטול', style: 'cancel' },
+          { text: 'פתח הגדרות', onPress: () => navigation.getParent()?.navigate('Settings') },
+        ]);
+      } else {
+        Alert.alert('חיפוש AI', AI_ERRORS[e.message] || 'שגיאת AI. נסה שוב.');
+      }
     } finally {
       setAiBusy(false);
     }
@@ -89,10 +96,10 @@ export default function AddFoodScreen({ navigation }) {
           value={query}
           onChangeText={setQuery}
         />
-        <Pressable style={styles.scanBtn} onPress={() => navigation.navigate('ScanBarcode')}>
+        <Pressable style={styles.scanBtn} onPress={() => navigation.navigate('ScanBarcode')} accessibilityRole="button" accessibilityLabel="סריקת ברקוד">
           <Text style={styles.scanBtnText}>📷</Text>
         </Pressable>
-        <Pressable style={styles.newBtn} onPress={() => navigation.navigate('CreateFood')}>
+        <Pressable style={styles.newBtn} onPress={() => navigation.navigate('CreateFood')} accessibilityRole="button" accessibilityLabel="צור מזון חדש">
           <Text style={styles.newBtnText}>＋ חדש</Text>
         </Pressable>
       </View>
@@ -110,6 +117,9 @@ export default function AddFoodScreen({ navigation }) {
         </ScrollView>
       </View>
 
+      {!hydrated ? (
+        <View style={styles.loadingWrap}><ActivityIndicator color={colors.volt} /></View>
+      ) : (
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
@@ -130,7 +140,13 @@ export default function AddFoodScreen({ navigation }) {
           const isSel = selected?.id === item.id;
           const rail = item.custom ? colors.volt : colors.amber;
           return (
-            <Pressable onPress={() => setSelected(item)} onLongPress={() => item.custom && removeCustom(item)}>
+            <Pressable
+              onPress={() => setSelected(item)}
+              onLongPress={() => item.custom && removeCustom(item)}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.name}, ${item.calories} קלוריות, ${item.protein} גרם חלבון`}
+              accessibilityHint={item.custom ? 'לחיצה ארוכה מוחקת מזון שלי' : undefined}
+            >
               <Card accent={rail} padded={false} style={[styles.food, isSel && styles.foodSel]}>
                 <View style={styles.foodPad}>
                   <View style={{ flex: 1 }}>
@@ -156,6 +172,7 @@ export default function AddFoodScreen({ navigation }) {
           </Text>
         }
       />
+      )}
 
       {selected && (
         <View style={[styles.addBar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
@@ -226,6 +243,7 @@ const styles = StyleSheet.create({
   macro: { fontFamily: fonts.extrabold, fontSize: 14 },
   macroUnit: { fontFamily: fonts.medium, fontSize: 10, color: colors.textDim },
   empty: { fontFamily: fonts.regular, color: colors.textDim, textAlign: 'center', marginTop: 36, fontSize: 15, lineHeight: 24 },
+  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 40 },
 
   addBar: {
     position: 'absolute', left: 0, right: 0, bottom: 0,

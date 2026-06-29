@@ -56,12 +56,12 @@ export async function scheduleMealReminders(times = DEFAULT_REMINDER_TIMES) {
       content: {
         title: `הגיע הזמן לאכול — ${t.label} 🍽️`,
         body: 'רשום את הארוחה והמשך לעמוד ביעדי הקלוריות והחלבון שלך.',
-        ...(Platform.OS === 'android' ? { channelId: 'meal-reminders' } : {}),
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
         hour: t.hour,
         minute: t.minute,
+        ...(Platform.OS === 'android' ? { channelId: 'meal-reminders' } : {}),
       },
     });
   }

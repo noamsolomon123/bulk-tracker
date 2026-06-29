@@ -24,6 +24,13 @@ export const DEFAULT_PROFILE = {
   proteinPerKg: 2.0, // g of protein per kg bodyweight for muscle gain
 };
 
+// Coerce a numeric profile field to a finite, positive number, falling back to
+// a default so an empty string or NaN can never produce NaN/0 goals.
+function safe(v, d) {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : d;
+}
+
 function activityFactor(key) {
   const a = ACTIVITY_LEVELS.find((l) => l.key === key);
   return a ? a.factor : 1.55;
@@ -36,7 +43,10 @@ function surplusKcal(key) {
 
 // Mifflin-St Jeor Basal Metabolic Rate
 export function calcBMR({ weightKg, heightCm, age, sex }) {
-  const base = 10 * weightKg + 6.25 * heightCm - 5 * age;
+  const w = safe(weightKg, DEFAULT_PROFILE.weightKg);
+  const h = safe(heightCm, DEFAULT_PROFILE.heightCm);
+  const a = safe(age, DEFAULT_PROFILE.age);
+  const base = 10 * w + 6.25 * h - 5 * a;
   return sex === 'female' ? base - 161 : base + 5;
 }
 
@@ -46,7 +56,7 @@ export function computeGoals(profile) {
   const bmr = calcBMR(p);
   const tdee = bmr * activityFactor(p.activity);
   const calories = Math.round(tdee + surplusKcal(p.surplus));
-  const protein = Math.round((p.proteinPerKg || 2.0) * p.weightKg);
+  const protein = Math.round((p.proteinPerKg || 2.0) * safe(p.weightKg, DEFAULT_PROFILE.weightKg));
   return {
     bmr: Math.round(bmr),
     tdee: Math.round(tdee),

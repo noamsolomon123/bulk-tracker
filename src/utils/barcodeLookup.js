@@ -1,11 +1,19 @@
-import BARCODES from '../data/barcodes.json';
 import { lookupBarcode as lookupOFF } from './openfoodfacts';
 
-// Offline lookup against the bundled Israeli barcode DB (15.5k products).
+// Lazy-load the ~1.1 MB Israeli barcode DB (15.5k products) so Metro doesn't
+// parse/retain it at app boot — the scanner is rarely used.
 // Map value shape: [name, kcal_per_100g, protein_per_100g].
+let _db;
+function db() {
+  if (!_db) _db = require('../data/barcodes.json');
+  return _db;
+}
+
+// Offline lookup against the bundled Israeli barcode DB (15.5k products).
 export function lookupLocalBarcode(code) {
   const c = String(code || '').trim();
   if (!c) return null;
+  const BARCODES = db();
   let r = BARCODES[c];
   if (!r) {
     const noZeros = c.replace(/^0+/, '');

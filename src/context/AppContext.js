@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { AppState, Alert } from 'react-native';
 import { KEYS, loadJSON, saveJSON } from '../storage/storage';
 import { STARTER_FOODS } from '../data/foods';
 import { DEFAULT_PROFILE, computeGoals } from '../utils/nutrition';
@@ -13,6 +14,7 @@ const DEFAULT_SETTINGS = {
   remindersEnabled: false,
   reminderTimes: DEFAULT_REMINDER_TIMES,
   geminiKey: '', // user-pasted Gemini API key (stored locally only)
+  profileConfigured: false, // flips true on the first real profile edit
 };
 
 export const MY_FOODS_CAT = 'המזונות שלי';
@@ -38,6 +40,8 @@ export function AppProvider({ children }) {
   const [log, setLog] = useState([]); // array of entries
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [hydrated, setHydrated] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  const saveErrorShown = useRef(false);
 
   // Load persisted state once.
   useEffect(() => {
@@ -49,8 +53,19 @@ export function AppProvider({ children }) {
         loadJSON(KEYS.SETTINGS, DEFAULT_SETTINGS),
       ]);
       setProfile({ ...DEFAULT_PROFILE, ...p });
-      setCustomFoods(cf);
-      setLog(lg);
+      setCustomFoods(Array.isArray(cf) ? cf : []);
+      // Drop corrupted/oversized persisted entries before they reach the reducers.
+      const validLog = Array.isArray(lg)
+        ? lg.filter(
+            (e) =>
+              e &&
+              typeof e.name === 'string' &&
+              typeof e.date === 'string' &&
+              Number.isFinite(Number(e.calories)) &&
+              Number.isFinite(Number(e.protein))
+          )
+        : [];
+      setLog(validLog);
       // Normalize reminder times to the {id,label,hour,minute,enabled} shape.
       const rawTimes = (st && st.reminderTimes) || DEFAULT_REMINDER_TIMES;
       const reminderTimes = rawTimes.map((t, i) => ({
@@ -65,19 +80,63 @@ export function AppProvider({ children }) {
     })();
   }, []);
 
+  // Surface a one-time notice if a critical write fails (e.g. storage full),
+  // so silent data loss isn't only discovered after a restart.
+  const reportSaveFailure = useCallback(() => {
+    if (saveErrorShown.current) return;
+    saveErrorShown.current = true;
+    Alert.alert(
+      'שמירה נכשלה',
+      'לא ניתן לשמור את הנתונים במכשיר — ייתכן שאחסון המכשיר מלא. פנה מקום כדי למנוע אובדן מידע.'
+    );
+  }, []);
+
   // Persist each slice when it changes (after hydration).
   useEffect(() => {
-    if (hydrated) saveJSON(KEYS.PROFILE, profile);
-  }, [profile, hydrated]);
+    if (hydrated) saveJSON(KEYS.PROFILE, profile).then((ok) => { if (!ok) reportSaveFailure(); });
+  }, [profile, hydrated, reportSaveFailure]);
   useEffect(() => {
     if (hydrated) saveJSON(KEYS.CUSTOM_FOODS, customFoods);
   }, [customFoods, hydrated]);
   useEffect(() => {
-    if (hydrated) saveJSON(KEYS.LOG, log);
-  }, [log, hydrated]);
+    if (hydrated) saveJSON(KEYS.LOG, log).then((ok) => { if (!ok) reportSaveFailure(); });
+  }, [log, hydrated, reportSaveFailure]);
   useEffect(() => {
     if (hydrated) saveJSON(KEYS.SETTINGS, settings);
   }, [settings, hydrated]);
+
+  // Recompute the active day on resume and at the next local midnight, so a
+  // foregrounded app rolls over to the new day instead of showing yesterday.
+  useEffect(() => {
+    const tick = () => setNow(Date.now());
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') tick();
+    });
+    let timer;
+    const scheduleMidnight = () => {
+      const d = new Date();
+      const next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 0, 0, 1, 0);
+      timer = setTimeout(() => {
+        tick();
+        scheduleMidnight();
+      }, next.getTime() - d.getTime());
+    };
+    scheduleMidnight();
+    return () => {
+      sub.remove();
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+
+  // Reschedule OS notifications as a pure side-effect whenever the master
+  // toggle or the (enabled) reminder times change — keeps the setState updater
+  // pure and picks up label/time edits so the OS schedule never goes stale.
+  useEffect(() => {
+    if (!hydrated) return;
+    if (settings.remindersEnabled) {
+      scheduleMealReminders(settings.reminderTimes).catch(() => {});
+    }
+  }, [hydrated, settings.remindersEnabled, settings.reminderTimes]);
 
   const goals = useMemo(() => computeGoals(profile), [profile]);
 
@@ -88,6 +147,8 @@ export function AppProvider({ children }) {
 
   const updateProfile = useCallback((patch) => {
     setProfile((prev) => ({ ...prev, ...patch }));
+    // First real edit marks the profile as configured (drives the home cue).
+    setSettings((prev) => (prev.profileConfigured ? prev : { ...prev, profileConfigured: true }));
   }, []);
 
   const addCustomFood = useCallback((food) => {
@@ -130,13 +191,14 @@ export function AppProvider({ children }) {
 
   // Entries + totals for a given day.
   const getDay = useCallback(
-    (dayKey = todayKey()) => {
-      const entries = log.filter((e) => e.date === dayKey);
+    (dayKey) => {
+      const key = dayKey || todayKey(new Date(now));
+      const entries = log.filter((e) => e.date === key);
       const calories = entries.reduce((s, e) => s + e.calories, 0);
       const protein = Math.round(entries.reduce((s, e) => s + e.protein, 0) * 10) / 10;
       return { entries, calories, protein };
     },
-    [log]
+    [log, now]
   );
 
   // ── Stats aggregation ───────────────────────────────────────────────
@@ -160,7 +222,7 @@ export function AppProvider({ children }) {
     for (const d of days) bestProtein = Math.max(bestProtein, byDay[d].protein);
     // current streak: consecutive logged days counting back from today (or yesterday)
     let streak = 0;
-    const cur = new Date();
+    const cur = new Date(now);
     if (!byDay[todayKey(cur)]) cur.setDate(cur.getDate() - 1);
     while (byDay[todayKey(cur)]) {
       streak += 1;
@@ -170,12 +232,12 @@ export function AppProvider({ children }) {
       byDay, days, totalCalories, totalProtein, daysTracked, avgCalories, avgProtein,
       daysOnTarget, bestProtein: Math.round(bestProtein), streak, startDate: days[0] || null,
     };
-  }, [log, goals.calories]);
+  }, [log, goals.calories, now]);
 
   const getRecentDays = useCallback(
     (n = 14) => {
       const out = [];
-      const today = new Date();
+      const today = new Date(now);
       for (let i = n - 1; i >= 0; i--) {
         const d = new Date(today);
         d.setDate(today.getDate() - i);
@@ -185,7 +247,7 @@ export function AppProvider({ children }) {
       }
       return out;
     },
-    [stats]
+    [stats, now]
   );
 
   // ── Reminder management ─────────────────────────────────────────────
@@ -193,10 +255,10 @@ export function AppProvider({ children }) {
     [...arr].sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute));
 
   const setReminderTimes = useCallback((updater) => {
+    // Pure updater: rescheduling is handled by a dedicated effect.
     setSettings((prev) => {
       const next = typeof updater === 'function' ? updater(prev.reminderTimes) : updater;
       const reminderTimes = sortByTime(next);
-      if (prev.remindersEnabled) scheduleMealReminders(reminderTimes);
       return { ...prev, reminderTimes };
     });
   }, []);
@@ -232,42 +294,66 @@ export function AppProvider({ children }) {
         if (!granted) {
           return false; // caller can show a message
         }
-        await scheduleMealReminders(settings.reminderTimes);
+        // Scheduling happens in the reschedule effect once the flag flips true.
       } else {
         await cancelMealReminders();
       }
       setSettings((prev) => ({ ...prev, remindersEnabled: enabled }));
       return true;
     },
-    [settings.reminderTimes]
+    []
   );
 
   const setGeminiKey = useCallback((key) => {
     setSettings((prev) => ({ ...prev, geminiKey: (key || '').trim() }));
   }, []);
 
-  const value = {
-    hydrated,
-    profile,
-    goals,
-    customFoods,
-    allFoods,
-    settings,
-    updateProfile,
-    addCustomFood,
-    deleteCustomFood,
-    addLogEntry,
-    deleteLogEntry,
-    getDay,
-    stats,
-    getRecentDays,
-    setRemindersEnabled,
-    addReminder,
-    updateReminder,
-    deleteReminder,
-    renameReminder,
-    setGeminiKey,
-  };
+  const value = useMemo(
+    () => ({
+      hydrated,
+      profile,
+      goals,
+      customFoods,
+      allFoods,
+      settings,
+      updateProfile,
+      addCustomFood,
+      deleteCustomFood,
+      addLogEntry,
+      deleteLogEntry,
+      getDay,
+      stats,
+      getRecentDays,
+      setRemindersEnabled,
+      addReminder,
+      updateReminder,
+      deleteReminder,
+      renameReminder,
+      setGeminiKey,
+    }),
+    [
+      hydrated,
+      profile,
+      goals,
+      customFoods,
+      allFoods,
+      settings,
+      stats,
+      updateProfile,
+      addCustomFood,
+      deleteCustomFood,
+      addLogEntry,
+      deleteLogEntry,
+      getDay,
+      getRecentDays,
+      setRemindersEnabled,
+      addReminder,
+      updateReminder,
+      deleteReminder,
+      renameReminder,
+      setGeminiKey,
+    ]
+  );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

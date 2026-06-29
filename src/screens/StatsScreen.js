@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, ActivityIndicator } from 'react-native';
 import Screen from '../components/Screen';
 import Card from '../components/Card';
 import BarChart from '../components/BarChart';
@@ -24,7 +24,7 @@ function Stat({ label, value, unit, color }) {
 }
 
 export default function StatsScreen({ navigation }) {
-  const { stats, goals, getRecentDays } = useApp();
+  const { stats, goals, getRecentDays, hydrated } = useApp();
   const [metric, setMetric] = useState('calories'); // calories | protein
   const now = new Date();
   const [view, setView] = useState({ y: now.getFullYear(), m: now.getMonth() });
@@ -38,8 +38,13 @@ export default function StatsScreen({ navigation }) {
   }));
   const goal = isCal ? goals.calories : goals.protein;
 
+  // Don't let the user page into empty future months that can never hold data.
+  const atCurrentMonth = view.y === now.getFullYear() && view.m === now.getMonth();
   const prevMonth = () => setView((v) => (v.m === 0 ? { y: v.y - 1, m: 11 } : { y: v.y, m: v.m - 1 }));
-  const nextMonth = () => setView((v) => (v.m === 11 ? { y: v.y + 1, m: 0 } : { y: v.y, m: v.m + 1 }));
+  const nextMonth = () => {
+    if (atCurrentMonth) return;
+    setView((v) => (v.m === 11 ? { y: v.y + 1, m: 0 } : { y: v.y, m: v.m + 1 }));
+  };
 
   const empty = stats.daysTracked === 0;
 
@@ -49,7 +54,11 @@ export default function StatsScreen({ navigation }) {
         <Text style={styles.overline}>הנתונים שלך · מאז שהתחלת</Text>
         <Text style={styles.title}>סטטיסטיקה</Text>
 
-        {empty ? (
+        {!hydrated ? (
+          <Card style={[{ marginTop: 8 }, styles.loadingCard]}>
+            <ActivityIndicator color={colors.volt} />
+          </Card>
+        ) : empty ? (
           <Card style={{ marginTop: 8 }}>
             <Text style={styles.emptyTitle}>עדיין אין נתונים 📊</Text>
             <Text style={styles.emptyText}>התחל לרשום ארוחות במסך הבית, והגרפים והיומן יתמלאו כאן.</Text>
@@ -100,6 +109,7 @@ export default function StatsScreen({ navigation }) {
                 todayKey={todayKey()}
                 onPrev={prevMonth}
                 onNext={nextMonth}
+                canNext={!atCurrentMonth}
                 onSelect={(k) => navigation.navigate('DayDetail', { dateKey: k })}
               />
               <Text style={styles.calHint}>הקש על יום מסומן כדי לראות מה אכלת בו</Text>
@@ -139,6 +149,7 @@ const styles = StyleSheet.create({
   segTxtOn: { color: colors.ink },
   calHint: { fontFamily: fonts.regular, fontSize: 12, color: colors.textFaint, textAlign: 'center', marginTop: 12 },
 
+  loadingCard: { minHeight: 120, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontFamily: fonts.display, fontSize: 18, color: colors.text, marginBottom: 6 },
   emptyText: { fontFamily: fonts.regular, fontSize: 14, color: colors.textDim, lineHeight: 21 },
 });

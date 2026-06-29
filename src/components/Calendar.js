@@ -11,7 +11,7 @@ const MONTHS = [
 const pad = (n) => String(n).padStart(2, '0');
 const keyOf = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
 
-export default function Calendar({ year, month, byDay, goalCal = 0, todayKey, onSelect, onPrev, onNext }) {
+export default function Calendar({ year, month, byDay, goalCal = 0, todayKey, onSelect, onPrev, onNext, canNext = true }) {
   const first = new Date(year, month, 1).getDay(); // 0=Sun
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const cells = [];
@@ -22,9 +22,9 @@ export default function Calendar({ year, month, byDay, goalCal = 0, todayKey, on
   return (
     <View>
       <View style={styles.header}>
-        <Pressable onPress={onPrev} hitSlop={10} style={styles.nav}><Text style={styles.navTxt}>›</Text></Pressable>
+        <Pressable onPress={onPrev} hitSlop={10} style={styles.nav} accessibilityRole="button" accessibilityLabel="חודש קודם"><Text style={styles.navTxt}>›</Text></Pressable>
         <Text style={styles.title}>{MONTHS[month]} {year}</Text>
-        <Pressable onPress={onNext} hitSlop={10} style={styles.nav}><Text style={styles.navTxt}>‹</Text></Pressable>
+        <Pressable onPress={onNext} hitSlop={10} style={styles.nav} disabled={!canNext} accessibilityRole="button" accessibilityLabel="חודש הבא"><Text style={[styles.navTxt, !canNext && styles.navDisabled]}>‹</Text></Pressable>
       </View>
 
       <View style={styles.weekRow}>
@@ -59,6 +59,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   nav: { paddingHorizontal: 10 },
   navTxt: { fontFamily: fonts.display, fontSize: 26, color: colors.volt },
+  navDisabled: { opacity: 0.3 },
   title: { fontFamily: fonts.display, fontSize: 18, color: colors.text },
   weekRow: { flexDirection: 'row', marginBottom: 6 },
   weekday: { flex: 1, textAlign: 'center', fontFamily: fonts.bold, fontSize: 12, color: colors.textFaint },

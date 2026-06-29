@@ -14,8 +14,9 @@ function Field({ label, ...props }) {
   );
 }
 
-export default function CreateFoodScreen({ navigation }) {
+export default function CreateFoodScreen({ navigation, route }) {
   const { addCustomFood } = useApp();
+  const code = route?.params?.code;
   const [name, setName] = useState('');
   const [serving, setServing] = useState('');
   const [calories, setCalories] = useState('');
@@ -44,6 +45,8 @@ export default function CreateFoodScreen({ navigation }) {
           <Text style={styles.title}>יצירת מזון שלי</Text>
           <Text style={styles.subtitle}>הזן את הערכים התזונתיים למנה אחת. הם נשמרים אצלך וזמינים לשימוש חוזר.</Text>
 
+          {code ? <Text style={styles.codeLine}>ברקוד שנסרק: {code}</Text> : null}
+
           <Field label="שם המזון" placeholder="לדוגמה: פנקייק חלבון" value={name} onChangeText={setName} />
           <Field label="תיאור המנה" placeholder="לדוגמה: 2 פנקייק / 100 גרם / כוס" value={serving} onChangeText={setServing} />
 
@@ -68,6 +71,7 @@ const styles = StyleSheet.create({
   overline: { fontFamily: fonts.bold, fontSize: 12, letterSpacing: 2, color: colors.volt, marginBottom: 4 },
   title: { fontFamily: fonts.display, fontSize: 28, color: colors.text, marginBottom: 8 },
   subtitle: { fontFamily: fonts.regular, color: colors.textDim, fontSize: 14, marginBottom: 24, lineHeight: 21 },
+  codeLine: { fontFamily: fonts.bold, color: colors.volt, fontSize: 13, marginBottom: 18 },
   row: { flexDirection: 'row', gap: 12 },
   field: { marginBottom: 18 },
   label: { fontFamily: fonts.bold, color: colors.textDim, fontSize: 12, letterSpacing: 1, marginBottom: 8 },

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, ScrollView, Alert, TextInput, Pressable, Linking } from 'react-native';
+import { View, Text, StyleSheet, Switch, ScrollView, Alert, TextInput, Pressable, Linking, Modal, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Screen from '../components/Screen';
 import Card from '../components/Card';
@@ -21,14 +21,29 @@ export default function SettingsScreen() {
   const [picker, setPicker] = useState(null); // { id, hour, minute }
   const [test, setTest] = useState(null); // 'loading' | { ok, msg }
   const hasKey = !!(settings.geminiKey && settings.geminiKey.trim());
+  const remindersOff = !settings.remindersEnabled;
 
   const onToggleMaster = async (value) => {
     setBusy(true);
     const ok = await setRemindersEnabled(value);
     setBusy(false);
     if (value && !ok) {
-      Alert.alert('ההתראות חסומות', 'אפשר הרשאת התראות לאפליקציה הזו בהגדרות המכשיר כדי לקבל תזכורות.');
+      Alert.alert(
+        'ההתראות חסומות',
+        'אפשר הרשאת התראות לאפליקציה הזו בהגדרות המכשיר כדי לקבל תזכורות.',
+        [
+          { text: 'ביטול', style: 'cancel' },
+          { text: 'פתח הגדרות', onPress: () => Linking.openSettings() },
+        ]
+      );
     }
+  };
+
+  const confirmDeleteReminder = (t) => {
+    Alert.alert('מחיקת תזכורת', `למחוק את "${t.label}"?`, [
+      { text: 'ביטול', style: 'cancel' },
+      { text: 'מחק', style: 'destructive', onPress: () => deleteReminder(t.id) },
+    ]);
   };
 
   const runTest = async () => {
@@ -59,6 +74,7 @@ export default function SettingsScreen() {
               value={settings.remindersEnabled}
               onValueChange={onToggleMaster}
               disabled={busy}
+              accessibilityLabel="תזכורות ארוחה"
               trackColor={{ true: colors.volt, false: colors.surface3 }}
               thumbColor={settings.remindersEnabled ? colors.ink : '#E8E0CE'}
               ios_backgroundColor={colors.surface3}
@@ -66,13 +82,18 @@ export default function SettingsScreen() {
           </View>
         </Card>
 
-        <Text style={styles.section}>הארוחות שלי</Text>
-        <Card padded={false}>
+        <Text style={styles.section}>שעות הארוחה</Text>
+        {remindersOff ? (
+          <Text style={styles.noteAbove}>הפעל את המתג הראשי למעלה כדי שהתזכורות יפעלו.</Text>
+        ) : null}
+        <Card padded={false} style={remindersOff && styles.cardDisabled}>
           {settings.reminderTimes.map((t, i) => (
             <View key={t.id} style={[styles.mealRow, i > 0 && styles.mealBorder]}>
               <Switch
                 value={t.enabled}
                 onValueChange={(v) => updateReminder(t.id, { enabled: v })}
+                disabled={remindersOff}
+                accessibilityLabel={`${t.label} ${formatTime(t)}`}
                 trackColor={{ true: colors.volt, false: colors.surface3 }}
                 thumbColor={t.enabled ? colors.ink : '#E8E0CE'}
                 ios_backgroundColor={colors.surface3}
@@ -82,24 +103,32 @@ export default function SettingsScreen() {
                 style={[styles.mealLabel, !t.enabled && styles.mealDim]}
                 value={t.label}
                 onChangeText={(txt) => renameReminder(t.id, txt)}
+                editable={!remindersOff}
                 placeholder="שם הארוחה"
                 placeholderTextColor={colors.textFaint}
               />
-              <Pressable onPress={() => setPicker({ id: t.id, hour: t.hour, minute: t.minute })} style={styles.timeBtn}>
+              <Pressable onPress={() => setPicker({ id: t.id, hour: t.hour, minute: t.minute })} disabled={remindersOff} style={styles.timeBtn}>
                 <Text style={[styles.timeTxt, !t.enabled && styles.mealDim]}>{formatTime(t)}</Text>
               </Pressable>
-              <Pressable onPress={() => deleteReminder(t.id)} hitSlop={8} style={styles.del}>
+              <Pressable
+                onPress={() => confirmDeleteReminder(t)}
+                disabled={remindersOff}
+                hitSlop={8}
+                style={styles.del}
+                accessibilityRole="button"
+                accessibilityLabel={`מחק תזכורת ${t.label}`}
+              >
                 <Text style={styles.delTxt}>✕</Text>
               </Pressable>
             </View>
           ))}
-          <Pressable style={styles.addRow} onPress={() => addReminder({ label: 'ארוחה חדשה', hour: 10, minute: 0 })}>
+          <Pressable style={styles.addRow} disabled={remindersOff} onPress={() => addReminder({ label: 'ארוחה חדשה', hour: 10, minute: 0 })}>
             <Text style={styles.addTxt}>＋ הוסף תזכורת</Text>
           </Pressable>
         </Card>
-        <Text style={styles.note}>
-          {settings.remindersEnabled ? 'התזכורות הפעילות חוזרות מדי יום.' : 'הפעל את המתג הראשי למעלה כדי שהתזכורות יפעלו.'}
-        </Text>
+        {!remindersOff ? (
+          <Text style={styles.note}>התזכורות הפעילות חוזרות מדי יום.</Text>
+        ) : null}
 
         {/* ── AI key ── */}
         <View style={styles.sectionRow}>
@@ -121,7 +150,12 @@ export default function SettingsScreen() {
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <Pressable style={styles.keyToggle} onPress={() => setShowKey((s) => !s)}>
+            <Pressable
+              style={styles.keyToggle}
+              onPress={() => setShowKey((s) => !s)}
+              accessibilityRole="button"
+              accessibilityLabel={showKey ? 'הסתר מפתח' : 'הצג מפתח'}
+            >
               <Text style={styles.keyToggleText}>{showKey ? 'הסתר' : 'הצג'}</Text>
             </Pressable>
           </View>
@@ -147,19 +181,50 @@ export default function SettingsScreen() {
       </ScrollView>
 
       {picker ? (
-        <DateTimePicker
-          value={new Date(2020, 0, 1, picker.hour, picker.minute)}
-          mode="time"
-          is24Hour
-          display="spinner"
-          onChange={(event, date) => {
-            const sel = picker;
-            setPicker(null);
-            if (event.type === 'set' && date) {
-              updateReminder(sel.id, { hour: date.getHours(), minute: date.getMinutes() });
-            }
-          }}
-        />
+        Platform.OS === 'ios' ? (
+          // iOS fires onChange continuously while scrolling and has no built-in
+          // Done — present the spinner in a sheet with an explicit confirm.
+          <Modal transparent animationType="fade" visible onRequestClose={() => setPicker(null)}>
+            <Pressable style={styles.modalBackdrop} onPress={() => setPicker(null)} />
+            <View style={styles.modalCard}>
+              <DateTimePicker
+                value={new Date(2020, 0, 1, picker.hour, picker.minute)}
+                mode="time"
+                is24Hour
+                display="spinner"
+                textColor={colors.text}
+                onChange={(event, date) => {
+                  if (date) setPicker((p) => ({ ...p, hour: date.getHours(), minute: date.getMinutes() }));
+                }}
+              />
+              <Pressable
+                style={styles.modalDone}
+                onPress={() => {
+                  updateReminder(picker.id, { hour: picker.hour, minute: picker.minute });
+                  setPicker(null);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="סיום"
+              >
+                <Text style={styles.modalDoneTxt}>סיום</Text>
+              </Pressable>
+            </View>
+          </Modal>
+        ) : (
+          <DateTimePicker
+            value={new Date(2020, 0, 1, picker.hour, picker.minute)}
+            mode="time"
+            is24Hour
+            display="spinner"
+            onChange={(event, date) => {
+              const sel = picker;
+              setPicker(null);
+              if (event.type === 'set' && date) {
+                updateReminder(sel.id, { hour: date.getHours(), minute: date.getMinutes() });
+              }
+            }}
+          />
+        )
       ) : null}
     </Screen>
   );
@@ -189,6 +254,8 @@ const styles = StyleSheet.create({
   addRow: { padding: 14, borderTopWidth: 1, borderTopColor: colors.borderSoft, alignItems: 'center' },
   addTxt: { fontFamily: fonts.extrabold, fontSize: 14, color: colors.volt },
   note: { fontFamily: fonts.regular, color: colors.textFaint, fontSize: 12, marginTop: 10 },
+  noteAbove: { fontFamily: fonts.regular, color: colors.textDim, fontSize: 13, marginBottom: 10 },
+  cardDisabled: { opacity: 0.4 },
 
   statusPill: { borderRadius: radius.pill, paddingHorizontal: 11, paddingVertical: 4 },
   statusText: { fontFamily: fonts.extrabold, fontSize: 12 },
@@ -205,6 +272,15 @@ const styles = StyleSheet.create({
   testBtnTxt: { fontFamily: fonts.extrabold, fontSize: 14, color: colors.volt },
   testResult: { fontFamily: fonts.bold, fontSize: 13, flexShrink: 1 },
   link: { fontFamily: fonts.bold, color: colors.volt, fontSize: 13, marginTop: 14 },
+
+  modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.55)' },
+  modalCard: {
+    position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.bgElev,
+    borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, borderTopWidth: 1.5,
+    borderTopColor: colors.border, paddingBottom: 24, alignItems: 'center',
+  },
+  modalDone: { backgroundColor: colors.volt, borderRadius: radius.md, paddingHorizontal: 40, paddingVertical: 12, marginTop: 4 },
+  modalDoneTxt: { fontFamily: fonts.extrabold, fontSize: 15, color: colors.ink },
 
   privacyCard: { marginTop: 26 },
   privacyPad: { padding: 18, paddingStart: 22 },

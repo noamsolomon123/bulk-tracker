@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, Alert } from 'react-native';
 import Screen from '../components/Screen';
 import Card from '../components/Card';
@@ -13,8 +13,11 @@ function prettyDate(d = new Date()) {
 }
 
 export default function HomeScreen({ navigation }) {
-  const { goals, getDay, deleteLogEntry, hydrated } = useApp();
+  const { goals, getDay, deleteLogEntry, hydrated, settings } = useApp();
   const day = getDay();
+  const [profileHintDismissed, setProfileHintDismissed] = useState(false);
+  const hasKey = !!(settings.geminiKey && settings.geminiKey.trim());
+  const showProfileHint = hydrated && !settings.profileConfigured && !profileHintDismissed;
 
   const calRemaining = goals.calories - day.calories;
   const calOver = calRemaining < 0;
@@ -38,6 +41,28 @@ export default function HomeScreen({ navigation }) {
           <View>
             <Text style={styles.overline}>עלייה במסה · היעד היומי</Text>
             <Text style={styles.date}>{prettyDate()}</Text>
+
+            {showProfileHint ? (
+              <Card accent={colors.volt} style={styles.banner}>
+                <View style={styles.bannerInner}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.bannerTitle}>הגדר את הנתונים שלך</Text>
+                    <Text style={styles.bannerText}>הזן גובה, משקל וגיל כדי לקבל יעד קלוריות וחלבון מדויק.</Text>
+                    <Pressable onPress={() => navigation.getParent()?.navigate('Profile')}>
+                      <Text style={styles.bannerLink}>פתח פרופיל ↗</Text>
+                    </Pressable>
+                  </View>
+                  <Pressable
+                    onPress={() => setProfileHintDismissed(true)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="סגור"
+                  >
+                    <Text style={styles.bannerClose}>✕</Text>
+                  </Pressable>
+                </View>
+              </Card>
+            ) : null}
 
             <Card style={styles.hero} padded={false}>
               <View style={styles.heroInner}>
@@ -69,7 +94,7 @@ export default function HomeScreen({ navigation }) {
             </Card>
 
             <Button label="הוספת מזון" icon="＋" onPress={() => navigation.navigate('AddFood')} style={styles.cta} />
-            <Button label="נתח צלחת (AI)" icon="📸" tone="amber" onPress={() => navigation.navigate('PhotoAnalyze')} style={styles.cta2} />
+            <Button label={hasKey ? 'נתח צלחת (AI)' : 'נתח צלחת (AI) · דרוש מפתח'} icon="📸" tone="amber" onPress={() => navigation.navigate('PhotoAnalyze')} style={styles.cta2} />
 
             <View style={styles.sectionRow}>
               <Text style={styles.section}>נרשם היום</Text>
@@ -110,6 +135,13 @@ const styles = StyleSheet.create({
   content: { padding: 18, paddingBottom: 36 },
   overline: { fontFamily: fonts.bold, fontSize: 12, letterSpacing: 2, color: colors.amber, marginBottom: 4 },
   date: { fontFamily: fonts.display, fontSize: 30, color: colors.text, marginBottom: 18 },
+
+  banner: { marginBottom: 16, padding: 16, paddingStart: 20 },
+  bannerInner: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  bannerTitle: { fontFamily: fonts.bold, fontSize: 15, color: colors.text, marginBottom: 4 },
+  bannerText: { fontFamily: fonts.regular, fontSize: 13, color: colors.textDim, lineHeight: 19 },
+  bannerLink: { fontFamily: fonts.bold, fontSize: 13, color: colors.volt, marginTop: 8 },
+  bannerClose: { fontFamily: fonts.bold, fontSize: 15, color: colors.textFaint, padding: 2 },
 
   hero: { alignItems: 'stretch' },
   heroInner: { alignItems: 'center', paddingTop: 22, paddingBottom: 18 },
